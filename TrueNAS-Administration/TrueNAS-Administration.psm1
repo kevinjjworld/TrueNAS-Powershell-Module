@@ -581,3 +581,165 @@ function Get-TrueNasUpdateStatus
     return $result
 }
 
+function Get-TrueNasGeneralConfig
+{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+
+    if (!$port)
+    {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/system/general"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    
+
+    return $result
+}
+
+function Get-TrueNasNTPServers
+{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+
+    if (!$port)
+    {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/system/ntpserver"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    
+
+    return $result
+}
+
+function Get-TrueNasSystemDataset
+{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+
+    if (!$port)
+    {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/systemdataset"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    
+
+    return $result
+}
+
+function Get-TrueNasTunable
+{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+
+    if (!$port)
+    {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/tunable"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    
+
+    return $result
+}
+
+function Get-TrueNasUsers
+{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [string]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+
+    if (!$port)
+    {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/user"
+
+    if ($Id)
+    {
+        $ApiSubPath += "/id/" + $Id
+    }
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    
+
+    return $result
+}
