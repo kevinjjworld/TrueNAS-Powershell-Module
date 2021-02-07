@@ -743,3 +743,115 @@ function Get-TrueNasUsers
 
     return $result
 }
+
+function Get-TrueNasVM
+{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [string]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+
+    if (!$port)
+    {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/vm"
+
+    if ($Id)
+    {
+        $ApiSubPath += "/id/" + $Id
+    }
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    
+
+    return $result
+}
+
+function Get-TrueNasVMMemoryUsage
+{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [string]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+
+    if (!$port)
+    {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/vm/get_vmemory_in_use"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    
+
+    return $result
+}
+
+function Get-TrueNasVMDevices
+{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [string]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+
+    if (!$port)
+    {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/vm/device"
+
+    if ($Id)
+    {
+        $ApiSubPath += "/id/" + $Id
+    }
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    
+
+    return $result
+}
