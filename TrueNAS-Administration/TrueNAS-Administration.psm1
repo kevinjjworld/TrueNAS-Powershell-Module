@@ -1,6 +1,6 @@
 # TrueNAS-Administration functions
-function Invoke-RestMethodOnFreeNAS
-{
+function Invoke-RestMethodOnFreeNAS {
+    
     [CmdletBinding()]
     Param
     (
@@ -20,16 +20,14 @@ function Invoke-RestMethodOnFreeNAS
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
     # Variables
     $headers = @{ "Content-type" = "application/json"; "Authorization" = "Bearer " + $apiToken }
     [string]$apiBaseURI = "https://${Server}"
-    if ($Port)
-    {
+    if ($Port) {
         $apiBaseURI = "https://${Server}:${Port}"
     }
     [string]$apiRootPath = "/api/v2.0"
@@ -42,8 +40,8 @@ function Invoke-RestMethodOnFreeNAS
     return $result
 }
 
-function Get-TrueNasInfos
-{
+function Get-TrueNasInfos {
+    
     [CmdletBinding()]
     Param
     (
@@ -58,8 +56,7 @@ function Get-TrueNasInfos
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -73,8 +70,8 @@ function Get-TrueNasInfos
     return $result
 }
 
-function Get-TrueNasPools
-{
+function Get-TrueNasPools {
+    
     [CmdletBinding()]
     Param
     (
@@ -91,16 +88,14 @@ function Get-TrueNasPools
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
     # Variables
     $ApiSubPath = "/pool"
 
-    if ($Id)
-    {
+    if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -111,8 +106,8 @@ function Get-TrueNasPools
     return $result
 }
 
-function Get-TrueNasPoolAttachements
-{
+function Get-TrueNasPoolAttachements {
+    
     [CmdletBinding()]
     Param
     (
@@ -129,8 +124,7 @@ function Get-TrueNasPoolAttachements
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -144,8 +138,8 @@ function Get-TrueNasPoolAttachements
     return $result
 }
 
-function Get-TrueNasPoolProcesses
-{
+function Get-TrueNasPoolProcesses {
+    
     [CmdletBinding()]
     Param
     (
@@ -162,8 +156,7 @@ function Get-TrueNasPoolProcesses
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -177,8 +170,8 @@ function Get-TrueNasPoolProcesses
     return $result
 }
 
-function Get-TrueNasPoolDisks
-{
+function Get-TrueNasPoolDisks {
+    
     [CmdletBinding()]
     Param
     (
@@ -195,8 +188,7 @@ function Get-TrueNasPoolDisks
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -210,8 +202,8 @@ function Get-TrueNasPoolDisks
     return $result
 }
 
-function Get-TrueNasPoolFileSystems
-{
+function Get-TrueNasPoolFileSystems {
+    
     [CmdletBinding()]
     Param
     (
@@ -228,8 +220,7 @@ function Get-TrueNasPoolFileSystems
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -243,8 +234,8 @@ function Get-TrueNasPoolFileSystems
     return $result
 }
 
-function Get-TrueNasDatasets
-{
+function Get-TrueNasDatasets {
+    
     [CmdletBinding()]
     Param
     (
@@ -261,16 +252,14 @@ function Get-TrueNasDatasets
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
     # Variables
     $ApiSubPath = "/pool/dataset"
 
-    if ($Id)
-    {
+    if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -281,8 +270,8 @@ function Get-TrueNasDatasets
     return $result
 }
 
-function Get-TrueNasDatasetAttachments
-{
+function Get-TrueNasDatasetAttachments {
+    
     [CmdletBinding()]
     Param
     (
@@ -299,8 +288,7 @@ function Get-TrueNasDatasetAttachments
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -315,8 +303,8 @@ function Get-TrueNasDatasetAttachments
     return $result
 }
 
-function Get-TrueNasDatasetProcesses
-{
+function Get-TrueNasDatasetProcesses {
+    
     [CmdletBinding()]
     Param
     (
@@ -333,8 +321,7 @@ function Get-TrueNasDatasetProcesses
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -349,8 +336,8 @@ function Get-TrueNasDatasetProcesses
     return $result
 }
 
-function Get-TrueNasServices
-{
+function Get-TrueNasServices {
+    
     [CmdletBinding()]
     Param
     (
@@ -367,16 +354,14 @@ function Get-TrueNasServices
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
     # Variables
     $ApiSubPath = "/service"
 
-    if ($Id)
-    {
+    if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -387,8 +372,8 @@ function Get-TrueNasServices
     return $result
 }
 
-function Get-TrueNasSharing
-{
+function Get-TrueNasSharing {
+    
     [CmdletBinding()]
     Param
     (
@@ -408,16 +393,14 @@ function Get-TrueNasSharing
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
     # Variables
     $ApiSubPath = "/sharing/$Type"
 
-    if ($Id)
-    {
+    if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -428,8 +411,8 @@ function Get-TrueNasSharing
     return $result
 }
 
-function Get-TrueNasSMBConfig
-{
+function Get-TrueNasSMBConfig {
+    
     [CmdletBinding()]
     Param
     (
@@ -444,8 +427,7 @@ function Get-TrueNasSMBConfig
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -459,8 +441,8 @@ function Get-TrueNasSMBConfig
     return $result
 }
 
-function Get-TrueNasSMBStatus
-{
+function Get-TrueNasSMBStatus {
+    
     [CmdletBinding()]
     Param
     (
@@ -475,8 +457,7 @@ function Get-TrueNasSMBStatus
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -490,8 +471,8 @@ function Get-TrueNasSMBStatus
     return $result
 }
 
-function Get-TrueNasSSHConfig
-{
+function Get-TrueNasSSHConfig {
+    
     [CmdletBinding()]
     Param
     (
@@ -506,8 +487,7 @@ function Get-TrueNasSSHConfig
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -520,8 +500,8 @@ function Get-TrueNasSSHConfig
 
     return $result
 }
-function Get-TrueNasUpdateTrains
-{
+function Get-TrueNasUpdateTrains {
+    
     [CmdletBinding()]
     Param
     (
@@ -536,8 +516,7 @@ function Get-TrueNasUpdateTrains
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -550,8 +529,8 @@ function Get-TrueNasUpdateTrains
 
     return $result
 }
-function Get-TrueNasUpdateStatus
-{
+function Get-TrueNasUpdateStatus {
+    
     [CmdletBinding()]
     Param
     (
@@ -566,8 +545,7 @@ function Get-TrueNasUpdateStatus
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -581,8 +559,8 @@ function Get-TrueNasUpdateStatus
     return $result
 }
 
-function Get-TrueNasGeneralConfig
-{
+function Get-TrueNasGeneralConfig {
+    
     [CmdletBinding()]
     Param
     (
@@ -597,8 +575,7 @@ function Get-TrueNasGeneralConfig
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -612,8 +589,8 @@ function Get-TrueNasGeneralConfig
     return $result
 }
 
-function Get-TrueNasNTPServers
-{
+function Get-TrueNasNTPServers {
+    
     [CmdletBinding()]
     Param
     (
@@ -628,8 +605,7 @@ function Get-TrueNasNTPServers
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -643,8 +619,8 @@ function Get-TrueNasNTPServers
     return $result
 }
 
-function Get-TrueNasSystemDataset
-{
+function Get-TrueNasSystemDataset {
+    
     [CmdletBinding()]
     Param
     (
@@ -659,8 +635,7 @@ function Get-TrueNasSystemDataset
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -674,8 +649,8 @@ function Get-TrueNasSystemDataset
     return $result
 }
 
-function Get-TrueNasTunable
-{
+function Get-TrueNasTunable {
+    
     [CmdletBinding()]
     Param
     (
@@ -690,8 +665,7 @@ function Get-TrueNasTunable
         [int]$Port
     )
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -705,8 +679,8 @@ function Get-TrueNasTunable
     return $result
 }
 
-function Get-TrueNasUsers
-{
+function Get-TrueNasUsers {
+    
     [CmdletBinding()]
     Param
     (
@@ -724,16 +698,14 @@ function Get-TrueNasUsers
     )
     
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
     # Variables
     $ApiSubPath = "/user"
 
-    if ($Id)
-    {
+    if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -744,8 +716,8 @@ function Get-TrueNasUsers
     return $result
 }
 
-function Get-TrueNasGroups
-{
+function Get-TrueNasGroups {
+    
     [CmdletBinding()]
     Param
     (
@@ -763,16 +735,14 @@ function Get-TrueNasGroups
     )
     
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
     # Variables
     $ApiSubPath = "/group"
 
-    if ($Id)
-    {
+    if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -783,8 +753,8 @@ function Get-TrueNasGroups
     return $result
 }
 
-function Get-TrueNasVM
-{
+function Get-TrueNasVM {
+
     [CmdletBinding()]
     Param
     (
@@ -802,16 +772,14 @@ function Get-TrueNasVM
     )
     
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
     # Variables
     $ApiSubPath = "/vm"
 
-    if ($Id)
-    {
+    if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -822,8 +790,8 @@ function Get-TrueNasVM
     return $result
 }
 
-function Get-TrueNasVMMemoryUsage
-{
+function Get-TrueNasVMMemoryUsage {
+    
     [CmdletBinding()]
     Param
     (
@@ -841,8 +809,7 @@ function Get-TrueNasVMMemoryUsage
     )
     
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
@@ -856,8 +823,8 @@ function Get-TrueNasVMMemoryUsage
     return $result
 }
 
-function Get-TrueNasVMDevices
-{
+function Get-TrueNasVMDevices {
+    
     [CmdletBinding()]
     Param
     (
@@ -875,22 +842,21 @@ function Get-TrueNasVMDevices
     )
     
 
-    if (!$port)
-    {
+    if (!$port) {
         $Port = 443
     }
 
     # Variables
     $ApiSubPath = "/vm/device"
 
-    if ($Id)
-    {
+    if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
-
+    
     # Lancement de la requête
     $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
     
 
     return $result
 }
+
