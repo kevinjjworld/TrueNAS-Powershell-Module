@@ -11,6 +11,8 @@ function Invoke-RestMethodOnFreeNAS {
         [Parameter(Mandatory = $true)]
         [String]$APIToken,
         [Parameter(Mandatory = $false)]
+        [String]$Body,
+        [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck,
         [Parameter(Mandatory = $false)]
         [ValidateSet("GET", "PUT", "POST", "DELETE")]
@@ -24,6 +26,10 @@ function Invoke-RestMethodOnFreeNAS {
         $Port = 443
     }
 
+    if(!$Body){
+        $Body = [string]::Empty
+    }
+
     # Variables
     $headers = @{ "Content-type" = "application/json"; "Authorization" = "Bearer " + $apiToken }
     [string]$apiBaseURI = "https://${Server}"
@@ -35,7 +41,7 @@ function Invoke-RestMethodOnFreeNAS {
     $apiFullUri = $($apiBaseURI + $apiRootPath + $ApiSubPath)
 
     # Lancement de la requête
-    $result = Invoke-RestMethod -Uri $apiFullUri -Method $Method -Headers $headers -SkipCertificateCheck:$SkipCertificateCheck
+    $result = Invoke-RestMethod -Uri $apiFullUri -Method $Method -Headers $headers -SkipCertificateCheck:$SkipCertificateCheck -Body $Body
 
     return $result
 }
@@ -348,7 +354,7 @@ function Get-TrueNasServices {
         [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck,
         [Parameter(Mandatory = $false)]
-        [string]$Id,
+        [int]$Id,
         [Parameter(Mandatory = $false)]
         [ValidateRange(1, 65535)]
         [int]$Port
@@ -387,7 +393,7 @@ function Get-TrueNasSharing {
         [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck,
         [Parameter(Mandatory = $false)]
-        [string]$Id,
+        [int]$Id,
         [Parameter(Mandatory = $false)]
         [ValidateRange(1, 65535)]
         [int]$Port
@@ -689,7 +695,7 @@ function Get-TrueNasUsers {
         [Parameter(Mandatory = $false)]
         [String]$APIToken,
         [Parameter(Mandatory = $false)]
-        [string]$Id,
+        [int]$Id,
         [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck,
         [Parameter(Mandatory = $false)]
@@ -726,7 +732,7 @@ function Get-TrueNasGroups {
         [Parameter(Mandatory = $false)]
         [String]$APIToken,
         [Parameter(Mandatory = $false)]
-        [string]$Id,
+        [int]$Id,
         [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck,
         [Parameter(Mandatory = $false)]
@@ -763,7 +769,7 @@ function Get-TrueNasVM {
         [Parameter(Mandatory = $false)]
         [String]$APIToken,
         [Parameter(Mandatory = $false)]
-        [string]$Id,
+        [int]$Id,
         [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck,
         [Parameter(Mandatory = $false)]
@@ -800,7 +806,7 @@ function Get-TrueNasVMMemoryUsage {
         [Parameter(Mandatory = $false)]
         [String]$APIToken,
         [Parameter(Mandatory = $false)]
-        [string]$Id,
+        [int]$Id,
         [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck,
         [Parameter(Mandatory = $false)]
@@ -833,7 +839,7 @@ function Get-TrueNasVMDevices {
         [Parameter(Mandatory = $false)]
         [String]$APIToken,
         [Parameter(Mandatory = $false)]
-        [string]$Id,
+        [int]$Id,
         [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck,
         [Parameter(Mandatory = $false)]
@@ -859,4 +865,147 @@ function Get-TrueNasVMDevices {
 
     return $result
 }
+
+function New-TrueNasUser {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $true)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $true)]
+        [pscredential]$Credential,
+        [Parameter(Mandatory = $true)]
+        [string]$FullName,
+        [Parameter(Mandatory = $false)]
+        [string]$email,
+        [Parameter(Mandatory = $false)]
+        [switch]$MicrosoftAccount,
+        [Parameter(Mandatory = $false)]
+        [switch]$SambaAuthentification,
+        [Parameter(Mandatory = $false)]
+        [switch]$PermitSudo,
+        [Parameter(Mandatory = $false)]
+        [string]$SSHPubKey,
+        [Parameter(Mandatory = $false)]
+        [switch]$LockUser,
+        [Parameter(Mandatory = $false)]
+        [string]$HomeDirectory,
+        [Parameter(Mandatory = $false)]
+        [string]$HomeDirectoryMode,
+        [Parameter(Mandatory = $false)]
+        [string]$Shell,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+
+    if (!$port) {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/user"
+
+    # Création de l'objet
+    $newObject = @{
+        username = $Credential.UserName;
+        group_create = $true;
+        full_name = $FullName;
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if(![string]::IsNullOrEmpty($SSHPubKey)){
+            $newObject.Add("sshpubkey", $SSHPubKey)
+        }
+        if(![string]::IsNullOrEmpty($email)){
+            $newObject.Add("email", $email)
+        }
+        if([string]::IsNullOrEmpty($Credential.GetNetworkCredential().Password)){
+            $newObject.Add("password_disabled", $true)
+        }
+        else {
+            $newObject.Add("password", $Credential.GetNetworkCredential().Password)
+        }
+        if($MicrosoftAccount.IsPresent){
+            $newObject.Add("microsoft_account", $true)
+        }
+        if($SambaAuthentification.IsPresent){
+            $newObject.Add("smb", $true)
+        }
+        if($PermitSudo.IsPresent){
+            $newObject.Add("sudo", $true)
+        }
+        if($LockUser.IsPresent){
+            $newObject.Add("locked", $true)
+        }
+        if(![string]::IsNullOrEmpty($HomeDirectory)){
+            $newObject.Add("home", $HomeDirectory)
+        }
+        if(![string]::IsNullOrEmpty($Shell)){
+            $newObject.Add("shell", $Shell)
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken -Body $body
+
+    return $result
+}
+function Remove-TrueNasUser {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $true)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $true)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$DeleteUserPrimaryGroup,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+    if (!$port) {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/user"
+    $ApiSubPath += "/id/" + $Id
+
+    # Création de l'objet
+    $newObject = @{
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($DeleteUserPrimaryGroup.IsPresent){
+            $newObject.Add("delete_group", $true)
+        }
+    #endregion
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method DELETE -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken -Body $body
+
+    return $result
+}
+
+
+
 
