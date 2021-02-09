@@ -911,7 +911,7 @@ function New-TrueNasUser {
 
     # Variables
     $ApiSubPath = "/user"
-
+    
     # Création de l'objet
     $newObject = @{
         username = $Credential.UserName;
@@ -947,6 +947,9 @@ function New-TrueNasUser {
         if(![string]::IsNullOrEmpty($HomeDirectory)){
             $newObject.Add("home", $HomeDirectory)
         }
+        if(![string]::IsNullOrEmpty($HomeDirectoryMode)){
+            $newObject.Add("home_mode", $HomeDirectoryMode)
+        }
         if(![string]::IsNullOrEmpty($Shell)){
             $newObject.Add("shell", $Shell)
         }
@@ -960,7 +963,8 @@ function New-TrueNasUser {
 
     return $result
 }
-function Remove-TrueNasUser {
+
+function Set-TrueNasUser {
     
     [CmdletBinding()]
     Param
@@ -972,7 +976,29 @@ function Remove-TrueNasUser {
         [Parameter(Mandatory = $true)]
         [int]$Id,
         [Parameter(Mandatory = $false)]
-        [switch]$DeleteUserPrimaryGroup,
+        [string]$Username,
+        [Parameter(Mandatory = $false)]
+        [securestring]$SecurePassword,
+        [Parameter(Mandatory = $false)]
+        [string]$FullName,
+        [Parameter(Mandatory = $false)]
+        [string]$email,
+        [Parameter(Mandatory = $false)]
+        [switch]$MicrosoftAccount,
+        [Parameter(Mandatory = $false)]
+        [switch]$SambaAuthentification,
+        [Parameter(Mandatory = $false)]
+        [switch]$PermitSudo,
+        [Parameter(Mandatory = $false)]
+        [string]$SSHPubKey,
+        [Parameter(Mandatory = $false)]
+        [switch]$LockUser,
+        [Parameter(Mandatory = $false)]
+        [string]$HomeDirectory,
+        [Parameter(Mandatory = $false)]
+        [string]$HomeDirectoryMode,
+        [Parameter(Mandatory = $false)]
+        [string]$Shell,
         [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck,
         [Parameter(Mandatory = $false)]
@@ -980,28 +1006,61 @@ function Remove-TrueNasUser {
         [int]$Port
     )
     
+
     if (!$port) {
         $Port = 443
     }
-
+    
     # Variables
-    $ApiSubPath = "/user"
-    $ApiSubPath += "/id/" + $Id
-
+    $ApiSubPath = "/user/id/$Id"
+    
     # Création de l'objet
     $newObject = @{
     }
 
     #region Ajout des paramètres supplémentaires
-        if($DeleteUserPrimaryGroup.IsPresent){
-            $newObject.Add("delete_group", $true)
+        if(![string]::IsNullOrEmpty($UserName)){
+            $newObject.Add("username", $Username)
+        }
+        if(![string]::IsNullOrEmpty($FullName)){
+            $newObject.Add("full_name", $FullName)
+        }
+        if(![string]::IsNullOrEmpty($SSHPubKey)){
+            $newObject.Add("sshpubkey", $SSHPubKey)
+        }
+        if(![string]::IsNullOrEmpty($email)){
+            $newObject.Add("email", $email)
+        }
+        if(![string]::IsNullOrEmpty($SecurePassword)){
+                $Cred = (New-Object System.Management.Automation.PSCredential -ArgumentList "None", $SecurePassword)
+                $newObject.Add("password", $Cred.GetNetworkCredential().Password)
+        }
+
+        if($MicrosoftAccount.IsPresent){
+            $newObject.Add("microsoft_account", $true)
+        }
+        if($SambaAuthentification.IsPresent){
+            $newObject.Add("smb", $true)
+        }
+        if($PermitSudo.IsPresent){
+            $newObject.Add("sudo", $true)
+        }
+        if($LockUser.IsPresent){
+            $newObject.Add("locked", $true)
+        }
+        if(![string]::IsNullOrEmpty($HomeDirectory)){
+            $newObject.Add("home", $HomeDirectory)
+        }
+        if(![string]::IsNullOrEmpty($Shell)){
+            $newObject.Add("shell", $Shell)
         }
     #endregion
+
     $body = $newObject | ConvertTo-Json
     
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method DELETE -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken -Body $body
+    $result = Invoke-RestMethodOnFreeNAS -Method PUT -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken -Body $body
 
     return $result
 }
