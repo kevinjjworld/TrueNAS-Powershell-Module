@@ -1,4 +1,43 @@
 # TrueNAS-Administration functions
+
+function Get-TrueNasSeesion {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port,
+        [Parameter(Mandatory = $true)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck
+    )
+
+    if (!$port) {
+        $Port = 443
+    }
+
+    $apiFullUri = "https://$Server`:$Port/api/v2.0/"
+
+    $headers = @{ "Content-type" = "application/json"; "Authorization" = "Bearer " + $apiToken }
+
+    # Connexion à l'API
+    try {
+        $result = Invoke-RestMethod -Uri $apiFullUri -Method Get -Headers $headers -SkipCertificateCheck:$SkipCertificateCheck `
+                      -SessionVariable CurrentSession
+    }
+    catch {
+        throw $_
+    }
+    
+    #Write-Verbose -Message "Connecté à $($result.info.title) $($result.info.version)"
+    Write-Host -ForegroundColor Cyan -Message "Connecté à $apiFullUri - $($result.info.title) $($result.info.version)"
+    
+    return $CurrentSession
+}
 function Invoke-RestMethodOnFreeNAS {
     
     [CmdletBinding()]
@@ -8,8 +47,10 @@ function Invoke-RestMethodOnFreeNAS {
         [string]$Server,
         [Parameter(Mandatory = $true)]
         [string]$ApiSubPath,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [Microsoft.PowerShell.Commands.WebRequestSession]$WebSession,
         [Parameter(Mandatory = $false)]
         [String]$Body,
         [Parameter(Mandatory = $false)]
@@ -21,6 +62,14 @@ function Invoke-RestMethodOnFreeNAS {
         [ValidateRange(1, 65535)]
         [int]$Port
     )
+
+    if ([string]::IsNullOrEmpty($APIToken) -and $null -eq $WebSession) {
+        throw New-Object System.Exception -ArgumentList "Un des paramètres APIToken ou WebSession doit être spécifié."
+    }
+
+    if (![string]::IsNullOrEmpty($APIToken) -and $null -ne $WebSession) {
+        throw New-Object System.Exception -ArgumentList "APIToken et WebSession ne doivent pas être utilisés en même temps."
+    }
 
     if (!$port) {
         $Port = 443
@@ -40,13 +89,21 @@ function Invoke-RestMethodOnFreeNAS {
 
     $apiFullUri = $($apiBaseURI + $apiRootPath + $ApiSubPath)
 
+    if($null -eq $WebSession) {
+        $otherParams = @{ Headers = $headers }
+    }else {
+        $otherParams = @{ WebSession = $WebSession }
+    }
+
     # Lancement de la requête
-    $result = Invoke-RestMethod -Uri $apiFullUri -Method $Method -Headers $headers -SkipCertificateCheck:$SkipCertificateCheck -Body $Body
+    #$result = Invoke-RestMethod -Uri $apiFullUri -Method $Method -Headers $headers -SkipCertificateCheck:$SkipCertificateCheck -Body $Body
+    $result = Invoke-RestMethod -Uri $apiFullUri -Method $Method -SkipCertificateCheck:$SkipCertificateCheck -Body $Body `
+                                @otherParams
 
     return $result
 }
 
-function Get-TrueNasInfos {
+function Get-TrueNasInfo {
     
     [CmdletBinding()]
     Param
@@ -56,11 +113,21 @@ function Get-TrueNasInfos {
         [Parameter(Mandatory = $false)]
         [String]$APIToken,
         [Parameter(Mandatory = $false)]
+        [Microsoft.PowerShell.Commands.WebRequestSession]$WebSession,
+        [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck,
         [Parameter(Mandatory = $false)]
         [ValidateRange(1, 65535)]
         [int]$Port
     )
+
+    if ([string]::IsNullOrEmpty($APIToken) -and $null -eq $WebSession) {
+        throw New-Object System.Exception -ArgumentList "Un des paramètres APIToken ou WebSession doit être spécifié."
+    }
+
+    if (![string]::IsNullOrEmpty($APIToken) -and $null -ne $WebSession) {
+        throw New-Object System.Exception -ArgumentList "APIToken et WebSession ne doivent pas être utilisés en même temps."
+    }
 
     if (!$port) {
         $Port = 443
@@ -69,14 +136,22 @@ function Get-TrueNasInfos {
     # Variables
     $ApiSubPath = "/system/info"
 
+    if($null -eq $WebSession) {
+        $otherParams = @{ APIToken = $APIToken }
+    }else {
+        $otherParams = @{ WebSession = $WebSession }
+    }
+
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    #$result = Invoke-RestMethodOnFreeNAS -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    $result = Invoke-RestMethodOnFreeNAS -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath `
+                                         @otherParams
     
 
     return $result
 }
 
-function Get-TrueNasPools {
+function Get-TrueNasPool {
     
     [CmdletBinding()]
     Param
@@ -112,7 +187,7 @@ function Get-TrueNasPools {
     return $result
 }
 
-function Get-TrueNasPoolAttachements {
+function Get-TrueNasPoolAttachement {
     
     [CmdletBinding()]
     Param
@@ -144,7 +219,7 @@ function Get-TrueNasPoolAttachements {
     return $result
 }
 
-function Get-TrueNasPoolProcesses {
+function Get-TrueNasPoolProcess {
     
     [CmdletBinding()]
     Param
@@ -176,7 +251,7 @@ function Get-TrueNasPoolProcesses {
     return $result
 }
 
-function Get-TrueNasPoolDisks {
+function Get-TrueNasPoolDisk {
     
     [CmdletBinding()]
     Param
@@ -208,7 +283,7 @@ function Get-TrueNasPoolDisks {
     return $result
 }
 
-function Get-TrueNasPoolFileSystems {
+function Get-TrueNasPoolFileSystem {
     
     [CmdletBinding()]
     Param
@@ -240,7 +315,7 @@ function Get-TrueNasPoolFileSystems {
     return $result
 }
 
-function Get-TrueNasDatasets {
+function Get-TrueNasDataset {
     
     [CmdletBinding()]
     Param
@@ -276,7 +351,7 @@ function Get-TrueNasDatasets {
     return $result
 }
 
-function Get-TrueNasDatasetAttachments {
+function Get-TrueNasDatasetAttachment {
     
     [CmdletBinding()]
     Param
@@ -309,7 +384,7 @@ function Get-TrueNasDatasetAttachments {
     return $result
 }
 
-function Get-TrueNasDatasetProcesses {
+function Get-TrueNasDatasetProcess {
     
     [CmdletBinding()]
     Param
@@ -342,7 +417,7 @@ function Get-TrueNasDatasetProcesses {
     return $result
 }
 
-function Get-TrueNasServices {
+function Get-TrueNasService {
     
     [CmdletBinding()]
     Param
@@ -506,7 +581,7 @@ function Get-TrueNasSSHConfig {
 
     return $result
 }
-function Get-TrueNasUpdateTrains {
+function Get-TrueNasUpdateTrain {
     
     [CmdletBinding()]
     Param
@@ -595,7 +670,7 @@ function Get-TrueNasGeneralConfig {
     return $result
 }
 
-function Get-TrueNasNTPServers {
+function Get-TrueNasNTPServer {
     
     [CmdletBinding()]
     Param
@@ -685,42 +760,7 @@ function Get-TrueNasTunable {
     return $result
 }
 
-function Get-TrueNasUsers {
-    
-    [CmdletBinding()]
-    Param
-    (
-        [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [int]$Id,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
-    )
-    
 
-    if (!$port) {
-        $Port = 443
-    }
-
-    # Variables
-    $ApiSubPath = "/user"
-
-    if ($Id) {
-        $ApiSubPath += "/id/" + $Id
-    }
-
-    # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
-
-    return $result
-}
 
 function Get-TrueNasAvailableShell {
     
@@ -752,42 +792,7 @@ function Get-TrueNasAvailableShell {
     return $result
 }
 
-function Get-TrueNasGroups {
-    
-    [CmdletBinding()]
-    Param
-    (
-        [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [int]$Id,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
-    )
-    
 
-    if (!$port) {
-        $Port = 443
-    }
-
-    # Variables
-    $ApiSubPath = "/group"
-
-    if ($Id) {
-        $ApiSubPath += "/id/" + $Id
-    }
-
-    # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
-
-    return $result
-}
 
 function Get-TrueNasVM {
 
@@ -896,6 +901,43 @@ function Get-TrueNasVMDevices {
     return $result
 }
 
+
+function Get-TrueNasUser {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+
+    if (!$port) {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/user"
+
+    if ($Id) {
+        $ApiSubPath += "/id/" + $Id
+    }
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    
+
+    return $result
+}
 function New-TrueNasUser {
     
     [CmdletBinding()]
@@ -1095,6 +1137,250 @@ function Set-TrueNasUser {
     return $result
 }
 
+function Remove-TrueNasUser {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $true)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $true)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$KeepPrimaryGroup,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
 
+    if (!$port) {
+        $Port = 443
+    }
+    
+    # Variables
+    $ApiSubPath = "/user/id/$Id"
+    
+    # Création de l'objet
+    $newObject = @{
+    }
 
+    #region Ajout des paramètres supplémentaires
+        if($KeepPrimaryGroup.IsPresent){
+            $newObject.Add("delete_group", $false)
+        }else {
+            $newObject.Add("delete_group", $true)
+        }
+    #endregion
 
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method DELETE -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken -Body $body
+
+    return $result
+}
+
+function Get-TrueNasGroup {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $false)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $false)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+
+    if (!$port) {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/group"
+
+    if ($Id) {
+        $ApiSubPath += "/id/" + $Id
+    }
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    
+
+    return $result
+}
+function New-TrueNasGroup {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $true)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $true)]
+        [string]$GroupName,
+        [Parameter(Mandatory = $false)]
+        [switch]$SambaGroup,
+        [Parameter(Mandatory = $false)]
+        [switch]$PermitSudo,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+
+    if (!$port) {
+        $Port = 443
+    }
+
+    # Variables
+    $ApiSubPath = "/group"
+    
+    # Création de l'objet
+    $newObject = @{
+        name = $GroupName;
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($SambaGroup.IsPresent){
+            $newObject.Add("smb", $true)
+        }else {
+            $newObject.Add("smb", $false)
+        }
+        if($PermitSudo.IsPresent){
+            $newObject.Add("sudo", $true)
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken -Body $body
+
+    return $result
+}
+
+function Set-TrueNasGroup {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $true)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $true)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [string]$GroupName,
+        [Parameter(Mandatory = $false)]
+        [switch]$SambaGroup,
+        [Parameter(Mandatory = $false)]
+        [switch]$PermitSudo,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+
+    if (!$port) {
+        $Port = 443
+    }
+    
+    # Variables
+    $ApiSubPath = "/group/id/$Id"
+    
+    # Création de l'objet
+    $newObject = @{
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if(![string]::IsNullOrEmpty($GroupName)){
+            $newObject.Add("name", $GroupName)
+        }
+        if($SambaGroup.IsPresent){
+            $newObject.Add("smb", $true)
+        }else {
+            $newObject.Add("smb", $false)
+        }
+        if($PermitSudo.IsPresent){
+            $newObject.Add("sudo", $true)
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method PUT -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken -Body $body
+
+    return $result
+}
+
+function Remove-TrueNasGroup {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+        [Parameter(Mandatory = $true)]
+        [String]$APIToken,
+        [Parameter(Mandatory = $true)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$RemoveUsersIfPrimaryGroup,
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipCertificateCheck,
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 65535)]
+        [int]$Port
+    )
+    
+
+    if (!$port) {
+        $Port = 443
+    }
+    
+    # Variables
+    $ApiSubPath = "/group/id/$Id"
+    
+    # Création de l'objet
+    $newObject = @{
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($RemoveUsersIfPrimaryGroup.IsPresent){
+            $newObject.Add("delete_users", $true)
+        }else {
+            $newObject.Add("delete_users", $false)
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method DELETE -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken -Body $body
+
+    return $result
+}
