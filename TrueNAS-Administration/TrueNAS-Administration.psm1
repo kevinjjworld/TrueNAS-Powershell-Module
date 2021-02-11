@@ -1,5 +1,35 @@
 # TrueNAS-Administration functions
 
+class TrueNasSession {
+    # Properties
+    [String] $Server
+    [int] $Port
+    [Microsoft.PowerShell.Commands.WebRequestSession] $WebSession
+    [bool] $SkipCertificateCheck
+    [String] $ApiName
+    [String] $Version
+
+    # Constructor
+    TrueNasSession ([String] $Server, [int] $Port, [Microsoft.PowerShell.Commands.WebRequestSession] $WebSession, [bool] $SkipCertificateCheck, [String] $ApiName, [string] $Version) {
+        $this.Server = $Server
+        $this.Port = $Port
+        $this.WebSession = $WebSession
+        $this.SkipCertificateCheck = $SkipCertificateCheck
+        $this.ApiName = $ApiName
+        $this.Version = $Version
+    }
+
+    # Method
+    [String] GetApiUri() {
+       return [string]::Format("https://{0}:{1}/api/v2.0/", $this.Server, $this.Port)
+    }
+
+    # ToString Method
+    [String] ToString() {
+        return [string]::Format("{0} - {1} {2}", $this.getApiUri(), $this.ApiName, $this.Version)
+    }
+}
+
 function Get-TrueNasSeesion {
     
     [CmdletBinding()]
@@ -9,25 +39,22 @@ function Get-TrueNasSeesion {
         [string]$Server,
         [Parameter(Mandatory = $false)]
         [ValidateRange(1, 65535)]
-        [int]$Port,
+        [int]$Port=443,
         [Parameter(Mandatory = $true)]
         [String]$APIToken,
         [Parameter(Mandatory = $false)]
         [switch]$SkipCertificateCheck
     )
 
-    if (!$port) {
-        $Port = 443
-    }
-
-    $apiFullUri = "https://$Server`:$Port/api/v2.0/"
+    
+    $apiFullUri = [string]::Format("https://{0}:{1}/api/v2.0/", $Server, $Port)
 
     $headers = @{ "Content-type" = "application/json"; "Authorization" = "Bearer " + $apiToken }
 
     # Connexion à l'API
     try {
         $result = Invoke-RestMethod -Uri $apiFullUri -Method Get -Headers $headers -SkipCertificateCheck:$SkipCertificateCheck `
-                      -SessionVariable CurrentSession
+                                    -SessionVariable CurrentSession
     }
     catch {
         throw $_
@@ -36,7 +63,9 @@ function Get-TrueNasSeesion {
     #Write-Verbose -Message "Connecté à $($result.info.title) $($result.info.version)"
     Write-Host -ForegroundColor Cyan -Message "Connecté à $apiFullUri - $($result.info.title) $($result.info.version)"
     
-    return $CurrentSession
+    $TrueNasSession = New-Object -TypeName TrueNasSession -ArgumentList @($Server, $Port, $CurrentSession, $SkipCertificateCheck, $result.info.title, $result.info.version)
+
+    return $TrueNasSession
 }
 function Invoke-RestMethodOnFreeNAS {
     
@@ -44,61 +73,26 @@ function Invoke-RestMethodOnFreeNAS {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
+        [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
         [string]$ApiSubPath,
         [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [Microsoft.PowerShell.Commands.WebRequestSession]$WebSession,
-        [Parameter(Mandatory = $false)]
         [String]$Body,
         [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
         [ValidateSet("GET", "PUT", "POST", "DELETE")]
-        [String]$Method = "GET",
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [String]$Method = "GET"
     )
-
-    if ([string]::IsNullOrEmpty($APIToken) -and $null -eq $WebSession) {
-        throw New-Object System.Exception -ArgumentList "Un des paramètres APIToken ou WebSession doit être spécifié."
-    }
-
-    if (![string]::IsNullOrEmpty($APIToken) -and $null -ne $WebSession) {
-        throw New-Object System.Exception -ArgumentList "APIToken et WebSession ne doivent pas être utilisés en même temps."
-    }
-
-    if (!$port) {
-        $Port = 443
-    }
 
     if(!$Body){
         $Body = [string]::Empty
     }
-
-    # Variables
-    $headers = @{ "Content-type" = "application/json"; "Authorization" = "Bearer " + $apiToken }
-    [string]$apiBaseURI = "https://${Server}"
-    if ($Port) {
-        $apiBaseURI = "https://${Server}:${Port}"
-    }
-    [string]$apiRootPath = "/api/v2.0"
-
-    $apiFullUri = $($apiBaseURI + $apiRootPath + $ApiSubPath)
-
-    if($null -eq $WebSession) {
-        $otherParams = @{ Headers = $headers }
-    }else {
-        $otherParams = @{ WebSession = $WebSession }
-    }
+    
+    $ApiSubPath = $ApiSubPath -replace("^/","")
+    $apiFullUri = [System.IO.Path]::Combine($TrueNasSession.GetApiUri(), $ApiSubPath)
 
     # Lancement de la requête
-    #$result = Invoke-RestMethod -Uri $apiFullUri -Method $Method -Headers $headers -SkipCertificateCheck:$SkipCertificateCheck -Body $Body
-    $result = Invoke-RestMethod -Uri $apiFullUri -Method $Method -SkipCertificateCheck:$SkipCertificateCheck -Body $Body `
-                                @otherParams
+    $result = Invoke-RestMethod -Uri $apiFullUri -SkipCertificateCheck:($TrueNasSession.SkipCertificateCheck) `
+                                -Method $Method -Body $Body -WebSession $TrueNasSession.WebSession
 
     return $result
 }
@@ -109,44 +103,14 @@ function Get-TrueNasInfo {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [Microsoft.PowerShell.Commands.WebRequestSession]$WebSession,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [TrueNasSession]$TrueNasSession
     )
-
-    if ([string]::IsNullOrEmpty($APIToken) -and $null -eq $WebSession) {
-        throw New-Object System.Exception -ArgumentList "Un des paramètres APIToken ou WebSession doit être spécifié."
-    }
-
-    if (![string]::IsNullOrEmpty($APIToken) -and $null -ne $WebSession) {
-        throw New-Object System.Exception -ArgumentList "APIToken et WebSession ne doivent pas être utilisés en même temps."
-    }
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/system/info"
 
-    if($null -eq $WebSession) {
-        $otherParams = @{ APIToken = $APIToken }
-    }else {
-        $otherParams = @{ WebSession = $WebSession }
-    }
-
     # Lancement de la requête
-    #$result = Invoke-RestMethodOnFreeNAS -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    $result = Invoke-RestMethodOnFreeNAS -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath `
-                                         @otherParams
-    
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
@@ -157,21 +121,10 @@ function Get-TrueNasPool {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
+        [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [int]$Id,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [int]$Id
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/pool"
@@ -181,8 +134,7 @@ function Get-TrueNasPool {
     }
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
@@ -193,27 +145,16 @@ function Get-TrueNasPoolAttachement {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
+        [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [int]$Id,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [int]$Id
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/pool/id/$id/attachments"
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method POST -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
 
     return $result
@@ -225,29 +166,17 @@ function Get-TrueNasPoolProcess {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
+        [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [int]$Id,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [int]$Id
     )
-
-    if (!$port) {
-        $Port = 443
-    }
-
+    
     # Variables
     $ApiSubPath = "/pool/id/$id/processes"
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method POST -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
-
     return $result
 }
 
@@ -257,60 +186,16 @@ function Get-TrueNasPoolDisk {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
+        [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [int]$Id,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [int]$Id
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/pool/id/$id/get_disks"
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method POST -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
-
-    return $result
-}
-
-function Get-TrueNasPoolFileSystem {
-    
-    [CmdletBinding()]
-    Param
-    (
-        [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $true)]
-        [int]$Id,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
-    )
-
-    if (!$port) {
-        $Port = 443
-    }
-
-    # Variables
-    $ApiSubPath = "/pool/filesystem_choices"
-
-    # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method POST -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
@@ -321,21 +206,10 @@ function Get-TrueNasDataset {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
+        [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [string]$Id,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [string]$Id
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/pool/dataset"
@@ -345,74 +219,49 @@ function Get-TrueNasDataset {
     }
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
-
     return $result
 }
 
-function Get-TrueNasDatasetAttachment {
+function Get-TrueNasPoolDatasetAttachment {
     
     [CmdletBinding()]
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
+        [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [string]$Id,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [string]$Id
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/pool/dataset"
     $ApiSubPath += "/id/" + $Id + "/attachments"
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method POST -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
 
-function Get-TrueNasDatasetProcess {
+function Get-TrueNasPoolDatasetProcess {
     
     [CmdletBinding()]
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
+        [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [string]$Id,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [string]$Id
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/pool/dataset"
     $ApiSubPath += "/id/" + $Id + "/processes"
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method POST -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
@@ -423,21 +272,10 @@ function Get-TrueNasService {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
+        [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [int]$Id,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [int]$Id
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/service"
@@ -447,8 +285,7 @@ function Get-TrueNasService {
     }
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
@@ -459,26 +296,16 @@ function Get-TrueNasSharing {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
+        [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
         [ValidateSet("afp", "nfs", "smb", "webdav")]
         [string]$Type,
         [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [int]$Id,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [int]$Id
     )
 
-    if (!$port) {
-        $Port = 443
-    }
-
     # Variables
+    $Type = $Type.ToLower()
     $ApiSubPath = "/sharing/$Type"
 
     if ($Id) {
@@ -486,8 +313,7 @@ function Get-TrueNasSharing {
     }
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
@@ -498,27 +324,15 @@ function Get-TrueNasSMBConfig {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [TrueNasSession]$TrueNasSession
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/smb"
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
-
     return $result
 }
 
@@ -528,27 +342,15 @@ function Get-TrueNasSMBStatus {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [TrueNasSession]$TrueNasSession
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/smb/status"
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method POST -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
-
     return $result
 }
 
@@ -558,27 +360,15 @@ function Get-TrueNasSSHConfig {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [TrueNasSession]$TrueNasSession
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/ssh"
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
-
     return $result
 }
 function Get-TrueNasUpdateTrain {
@@ -587,26 +377,14 @@ function Get-TrueNasUpdateTrain {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [TrueNasSession]$TrueNasSession
     )
-
-    if (!$port) {
-        $Port = 443
-    }
 
     # Variables
     $ApiSubPath = "/update/get_trains"
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method GET -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
@@ -616,26 +394,14 @@ function Get-TrueNasUpdateStatus {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [string]$Server,
-        [Parameter(Mandatory = $false)]
-        [String]$APIToken,
-        [Parameter(Mandatory = $false)]
-        [switch]$SkipCertificateCheck,
-        [Parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$Port
+        [TrueNasSession]$TrueNasSession
     )
-
-    if (!$port) {
-        $Port = 443
-    }
-
+    
     # Variables
     $ApiSubPath = "/update/check_available"
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method POST -Server $Server -Port $Port -SkipCertificateCheck:$SkipCertificateCheck -ApiSubPath $ApiSubPath -APIToken $APIToken
-    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath    
 
     return $result
 }
