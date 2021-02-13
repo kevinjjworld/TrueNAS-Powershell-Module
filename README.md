@@ -1,11 +1,11 @@
 # TrueNAS-Administration
 This is a Powershell Module that provides command-lines and automation for the TrueNAS API.
 
-### Compatibilities
+## Compatibilities
 * **Powershell 7.1** Minimum
 * TrueNAS RESTful API 2.0
 
-### Import the module in Powershell
+## Import the module in Powershell
 #### 1. Clone the repository or download the project :
 ```bash
 git clone 
