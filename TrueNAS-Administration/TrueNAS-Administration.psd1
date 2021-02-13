@@ -39,7 +39,7 @@
     # PowerShellHostName = ''
     
     # Minimum version of the PowerShell host required by this module
-    PowerShellHostVersion = '4.8'
+    #PowerShellHostVersion = ''
     
     # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
     # DotNetFrameworkVersion = ''
@@ -51,7 +51,7 @@
     # ProcessorArchitecture = ''
     
     # Modules that must be imported into the global environment prior to importing this module
-    # RequiredModules = @()
+    RequiredModules = @("Microsoft.PowerShell.Utility")
     
     # Assemblies that must be loaded prior to importing this module
     # RequiredAssemblies = @()
