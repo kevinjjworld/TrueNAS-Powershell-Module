@@ -21,7 +21,7 @@ git clone https://github.com/kevinjjworld/TrueNAS-Powershell-Module.git
 Import-Module -Name ".\TrueNAS-Powershell-Module\TrueNAS-Administration" -Force
 ```
 
-#### 4. List all module's command-lines :
+#### 4. List all module's Cmdlets :
 ```Powershell
 Get-Command -Module "TrueNAS-Administration"
 ```
@@ -43,11 +43,18 @@ Get-TrueNasInfo -TrueNasSession $Session
 ```
 * Get TrueNAS users :
 ```Powershell
-Get-TrueNasUser -TrueNasSession $TrueSession
+Get-TrueNasUser -TrueNasSession $Session
 ```
 
-* Create TrueNAS User (Exemple 1) :
+* Create new TrueNAS User (Example 1) :
 ```Powershell
 New-TrueNasUser -TrueNasSession $Session -Credential myNewUserName -FullName "My New User" -MicrosoftAccount -SambaAuthentification
 ```
-You will be prompted for the users's password.
+You will be prompted for the users's password. If you need a `non-interactive` command, see `Example 2`.
+
+* Create new TrueNAS User (Example 2) :
+```Powershell
+$Cred = New-Object System.Management.Automation.PSCredential -ArgumentList "userName", $(ConvertTo-SecureString -String "userPassword" -AsPlainText -Force)
+
+New-TrueNasUser -TrueNasSession $Session -Credential $Cred -FullName "My New User" -MicrosoftAccount -SambaAuthentification
+```
