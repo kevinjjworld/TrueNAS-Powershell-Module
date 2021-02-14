@@ -53,7 +53,7 @@ Get-TrueNasInfo -TrueNasSession $Session
 Get-TrueNasUser -TrueNasSession $Session
 ```
 
-### Create a new user
+#### Create a new user
 * Example 1 :
 ```Powershell
 New-TrueNasUser -TrueNasSession $Session -Credential userName -FullName "My New User" -MicrosoftAccount -SambaAuthentification
@@ -68,7 +68,7 @@ New-TrueNasUser -TrueNasSession $Session -Credential $Cred -FullName "My New Use
 ```
 This method is less secure because the password is written in clear text in the command line history.
 
-### List TrueNAS groups :
+#### List TrueNAS groups :
 ```Powershell
 Get-TrueNasGroup -TrueNasSession $Session
 ```
