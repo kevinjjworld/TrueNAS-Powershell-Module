@@ -23,7 +23,7 @@ Import-Module -Name ".\TrueNAS-Powershell-Module\TrueNAS-Administration" -Force
 
 #### 4. List all module's command-lines :
 ```Powershell
-Get-Command -Module "TrueNAS-Powershell-Module\TrueNAS-Administration"
+Get-Command -Module "TrueNAS-Administration"
 ```
 
 ## Usage
