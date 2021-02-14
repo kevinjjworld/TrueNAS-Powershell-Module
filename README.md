@@ -48,7 +48,7 @@ Get-TrueNasInfo -TrueNasSession $Session
 ```
 
 ## Examples
-### List TrueNAS users
+#### List TrueNAS users
 ```Powershell
 Get-TrueNasUser -TrueNasSession $Session
 ```
@@ -73,7 +73,7 @@ This method is less secure because the password is written in clear text in the 
 Get-TrueNasGroup -TrueNasSession $Session
 ```
 
-### Create a new group :
+#### Create a new group :
 ```Powershell
 New-TrueNasGroup -TrueNasSession $Session -GroupName "newGroupName" -SambaGroup
 ```
