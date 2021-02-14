@@ -8,7 +8,7 @@ With this module, you can manage your TrueNAS server from a computer with Powers
 * **[Powershell 7.1](https://github.com/PowerShell/PowerShell/releases/latest)** Minimum
 * TrueNAS RESTful API 2.0
 
-## Installing Powershell 7 ?
+### How to install Powershell 7 ?
 * [Installing Powershell 7 on Windows](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-core-on-windows?view=powershell-7.1)
 * [Installing Powershell 7 on Debian 10](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7.1#debian-10)
 * [Installing Powershell 7 on Ubuntu 20.04](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7.1#ubuntu-2004)
@@ -56,7 +56,7 @@ Get-TrueNasUser -TrueNasSession $Session
 #### Create a new user
 * Example 1 :
 ```Powershell
-New-TrueNasUser -TrueNasSession $Session -Credential userName -FullName "My New User" `
+New-TrueNasUser -TrueNasSession $Session -Credential "userName" -FullName "My New User" `
                 -MicrosoftAccount -SambaAuthentification
 ```
 You will be prompted for the users's password. If you need a **non-interactive** command, see **Example 2**.
