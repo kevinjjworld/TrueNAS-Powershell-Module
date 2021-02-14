@@ -9,9 +9,9 @@ With this module, you can manage your TrueNAS server from a computer with Powers
 * TrueNAS RESTful API 2.0
 
 ## Installing Powershell 7 ?
-* [Install Powershell 7 on Windows](https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell-core-on-windows?view=powershell-7.1)
-* [Install Powershell 7 on Debian 10](https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7.1#debian-10)
-* [Install Powershell 7 on Ubuntu 20.04](https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7.1#ubuntu-2004)
+* [Installing Powershell 7 on Windows](https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell-core-on-windows?view=powershell-7.1)
+* [Installing Powershell 7 on Debian 10](https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7.1#debian-10)
+* [Installing Powershell 7 on Ubuntu 20.04](https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7.1#ubuntu-2004)
 
 
 ## Import the module in Powershell
