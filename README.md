@@ -5,7 +5,7 @@ With this module, you can manage your TrueNAS server from a computer with Powers
 * This module only works with [TrueNAS API Key](https://www.truenas.com/docs/hub/additional-topics/api/#creating-api-keys).
 
 ## Requirements
-* **[Powershell 7.1](https://github.com/PowerShell/PowerShell/releases/latest)** Minimum
+* **Powershell 7.1** Minimum
 * TrueNAS RESTful API 2.0
 
 ### How to install Powershell 7 ?
@@ -38,11 +38,11 @@ Get-Command -Module "TrueNAS-Administration"
 ```Powershell
 $Session = Get-TrueNasSeesion -Server "truenas" -APIToken "1-xxxxxxxxxxx"
 ```
-* If you don't have a valid certificate, use the `-SkipCertificateCheck` parameter :
+* If you don't have a valid certificate, use the parameter `-SkipCertificateCheck` :
 ```Powershell
 $Session = Get-TrueNasSeesion -Server "truenas" -APIToken "1-xxxxxxxxxxx" -SkipCertificateCheck
 ```
-#### 2. Execute Cmdlets using the previous variable contains the session. For example :
+#### 2. Run Cmdlets using the previous variable containing the session. For example :
 ```Powershell
 Get-TrueNasInfo -TrueNasSession $Session
 ```
