@@ -64,12 +64,12 @@ You will be prompted for the users's password. If you need a **non-interactive**
 * Example 2 :
 ```Powershell
 $Cred = New-Object System.Management.Automation.PSCredential -ArgumentList @(
-    "userName",
-    $(ConvertTo-SecureString -String "userPassword" -AsPlainText -Force)
-    )
+        "userName",
+        $(ConvertTo-SecureString -String "userPassword" -AsPlainText -Force)
+)
 
 New-TrueNasUser -TrueNasSession $Session -Credential $Cred -FullName "My New User" `
--MicrosoftAccount -SambaAuthentification
+                -MicrosoftAccount -SambaAuthentification
 ```
 This method is less secure because the password is written in clear text in the command line history.
 
