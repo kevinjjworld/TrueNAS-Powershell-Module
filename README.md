@@ -55,7 +55,7 @@ Get-TrueNasUser -TrueNasSession $Session
 
 * Create a new user (Example 1) :
 ```Powershell
-New-TrueNasUser -TrueNasSession $Session -Credential myNewUserName -FullName "My New User" -MicrosoftAccount -SambaAuthentification
+New-TrueNasUser -TrueNasSession $Session -Credential userName -FullName "My New User" -MicrosoftAccount -SambaAuthentification
 ```
 You will be prompted for the users's password. If you need a `non-interactive` command, see `Example 2`.
 
