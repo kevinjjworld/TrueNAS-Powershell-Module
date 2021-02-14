@@ -48,12 +48,12 @@ Get-TrueNasInfo -TrueNasSession $Session
 ```
 
 ## Examples
-* List TrueNAS users :
+### List TrueNAS users :
 ```Powershell
 Get-TrueNasUser -TrueNasSession $Session
 ```
 
-* Create a new user (Example 1) :
+### Create a new user (Example 1) :
 ```Powershell
 New-TrueNasUser -TrueNasSession $Session -Credential userName -FullName "My New User" -MicrosoftAccount -SambaAuthentification
 ```
