@@ -36,25 +36,37 @@ $Session = Get-TrueNasSeesion -Server "truenas" -APIToken "1-xxxxxxxxxxx"
 ```Powershell
 $Session = Get-TrueNasSeesion -Server "truenas" -APIToken "1-xxxxxxxxxxx" -SkipCertificateCheck
 ```
-#### 2. Execute Cmdlets using the previous variable contains the session
-* Get TrueNAS informations :
+#### 2. Execute Cmdlets using the previous variable contains the session. For example :
 ```Powershell
 Get-TrueNasInfo -TrueNasSession $Session
 ```
-* Get TrueNAS users :
+
+## Examples
+* List TrueNAS users :
 ```Powershell
 Get-TrueNasUser -TrueNasSession $Session
 ```
 
-* Create new TrueNAS User (Example 1) :
+* Create a new user (Example 1) :
 ```Powershell
 New-TrueNasUser -TrueNasSession $Session -Credential myNewUserName -FullName "My New User" -MicrosoftAccount -SambaAuthentification
 ```
 You will be prompted for the users's password. If you need a `non-interactive` command, see `Example 2`.
 
-* Create new TrueNAS User (Example 2) :
+* Create new user (Example 2) :
 ```Powershell
 $Cred = New-Object System.Management.Automation.PSCredential -ArgumentList "userName", $(ConvertTo-SecureString -String "userPassword" -AsPlainText -Force)
 
 New-TrueNasUser -TrueNasSession $Session -Credential $Cred -FullName "My New User" -MicrosoftAccount -SambaAuthentification
+```
+This method is less secure because the password is written in clear text in the command line history.
+
+* List TrueNAS groups :
+```Powershell
+Get-TrueNasGroup -TrueNasSession $Session
+```
+
+* Create a new group :
+```Powershell
+New-TrueNasGroup -TrueNasSession $Session -GroupName "newGroupName" -SambaGroup
 ```
