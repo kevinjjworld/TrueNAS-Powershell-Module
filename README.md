@@ -1,11 +1,11 @@
 # TrueNAS-Administration
 This is a Powershell Module that provides command-lines and automation for the TrueNAS API.
 With this module, you can manage your TrueNAS server from a computer with Powershell (Windows or Linux).
-* This module only works on HTTPS.
+* This module only works over HTTPS.
 * This module only works with [TrueNAS API Key](https://www.truenas.com/docs/hub/additional-topics/api/#creating-api-keys).
 
-## Compatibilities
-* **Powershell 7.1** Minimum
+## Requirements
+* **[Powershell 7.1](https://github.com/PowerShell/PowerShell/releases/latest)** Minimum
 * TrueNAS RESTful API 2.0
 
 ## Import the module in Powershell
@@ -16,12 +16,12 @@ git clone https://github.com/kevinjjworld/TrueNAS-Powershell-Module.git
 ```
 #### 2. Import the Module in Powershell :
 ```Powershell
-Import-Module -Name ".\TrueNAS-Administration" -Force
+Import-Module -Name ".\TrueNAS-Powershell-Module\TrueNAS-Administration" -Force
 ```
 
 #### 3. List all module's command-lines :
 ```Powershell
-Get-Command -Module "TrueNAS-Administration"
+Get-Command -Module "TrueNAS-Powershell-Module\TrueNAS-Administration"
 ```
 
 ## Usage
@@ -43,3 +43,9 @@ Get-TrueNasInfo -TrueNasSession $Session
 ```Powershell
 Get-TrueNasUser -TrueNasSession $TrueSession
 ```
+
+* Create TrueNAS User (Exemple 1) :
+```Powershell
+New-TrueNasUser -TrueNasSession $Session -Credential myNewUserName -FullName "My New User" -MicrosoftAccount -SambaAuthentification
+```
+You will be prompted for the users's password.
