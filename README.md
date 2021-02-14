@@ -9,17 +9,19 @@ With this module, you can manage your TrueNAS server from a computer with Powers
 * TrueNAS RESTful API 2.0
 
 ## Import the module in Powershell
-#### 1. Clone the repository or download the project :
+#### 1. Run Powershell 7
+
+#### 2. Clone the repository or download the project :
 ```bash
 git clone https://github.com/kevinjjworld/TrueNAS-Powershell-Module.git
 
 ```
-#### 2. Import the Module in Powershell :
+#### 3. Import the Module in Powershell :
 ```Powershell
 Import-Module -Name ".\TrueNAS-Powershell-Module\TrueNAS-Administration" -Force
 ```
 
-#### 3. List all module's command-lines :
+#### 4. List all module's command-lines :
 ```Powershell
 Get-Command -Module "TrueNAS-Powershell-Module\TrueNAS-Administration"
 ```
