@@ -290,6 +290,49 @@ function Get-TrueNasService {
     return $result
 }
 
+function Set-TrueNasService {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$EnableAtStartup,
+        [switch]$DisableAtStartup
+    )
+
+    if($EnableAtStartup.IsPresent -and $DisableAtStartup.IsPresent){
+        throw "-EnableAtStartup et -DisableAtStartup ne peuvent pas être utilisés dans la même commande."
+    }
+
+    # Variables
+    $ApiSubPath += "/service/id/$Id"
+
+     # Création de l'objet
+     $newObject = @{
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($EnableAtStartup.IsPresent) {
+            $newObject.Add("enable", $true)
+        }
+        if($DisableAtStartup.IsPresent) {
+            $newObject.Add("enable", $false)
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Put -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasSharing {
     
     [CmdletBinding()]
