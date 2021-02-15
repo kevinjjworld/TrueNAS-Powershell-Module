@@ -409,6 +409,44 @@ function Stop-TrueNasService {
     return $result
 }
 
+function Restart-TrueNasService {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$ServiceName,
+        [switch]$HaPropagate
+    )
+
+    # Variables
+    $ApiSubPath += "/service/restart"
+
+     # Création de l'objet
+     $newObject = @{
+        service = $ServiceName
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($HaPropagate.IsPresent) {
+            $newObject.Add(
+                "service-control",
+                @{ ha_propagate = $true }
+            )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasSharing {
     
     [CmdletBinding()]
