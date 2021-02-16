@@ -321,6 +321,61 @@ function New-TrueNasZvol {
     return $result
 }
 
+function Set-TrueNasDataset {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [string]$Comments,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("PASSTHROUGH", "RESTRICTED")]
+        [string]$AclMode,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("True", "False", "ON", "OFF")]
+        [string]$ReadOnly
+    )
+    
+    # Variables
+    $ApiSubPath = "/pool/dataset/id/$Id"
+    
+    switch ($ReadOnly) {
+        "True" { $ReadOnly = "ON" }
+        "False" { $ReadOnly = "OFF" }
+    }
+
+    # Création de l'objet
+    $newObject = @{
+    }
+
+    #region Ajout des paramètres supplémentaires
+    if(![string]::IsNullOrEmpty($Comments)){
+        $newObject.Add("comments", $Comments)
+    }
+    if(![string]::IsNullOrEmpty($AclMode)){
+        $newObject.Add("aclmode", $AclMode)
+    }
+    if($ReadOnly -eq "ON"){
+        $newObject.Add("readonly", "ON")
+    }
+    if($ReadOnly -eq "OFF"){
+        $newObject.Add("readonly", "OFF")
+    }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Delete -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Remove-TrueNasDataset {
     
     [CmdletBinding()]
@@ -344,10 +399,10 @@ function Remove-TrueNasDataset {
     }
 
     #region Ajout des paramètres supplémentaires
-        if($KeepPrimaryGroup.Recurse){
+        if($Recurse.IsPresent){
             $newObject.Add("recursive", $true)
         }
-        if($KeepPrimaryGroup.Force){
+        if($Force.IsPresent){
             $newObject.Add("force", $true)
         }
     #endregion
