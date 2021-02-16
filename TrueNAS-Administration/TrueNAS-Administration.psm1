@@ -224,6 +224,143 @@ function Get-TrueNasDataset {
     return $result
 }
 
+function New-TrueNasDataset {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("GENERIC", "SMB")]
+        [string]$ShareType,
+        [Parameter(Mandatory = $false)]
+        [string]$Comments,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("PASSTHROUGH", "RESTRICTED")]
+        [string]$AclMode,
+        [Parameter(Mandatory = $false)]
+        [switch]$ReadOnly
+    )
+
+    # Variables
+    $ApiSubPath = "/pool/dataset"
+
+    # Création de l'objet
+    $newObject = @{
+        type = "FILESYSTEM";
+        name = $Name
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if(![string]::IsNullOrEmpty($ShareType)){
+            $newObject.Add("share_type", $ShareType)
+        }
+        if(![string]::IsNullOrEmpty($Comments)){
+            $newObject.Add("comments", $Comments)
+        }
+        if(![string]::IsNullOrEmpty($AclMode)){
+            $newObject.Add("aclmode", $AclMode)
+        }
+        if($ReadOnly.IsPresent){
+            $newObject.Add("readonly", "ON")
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    
+    return $result
+}
+
+function New-TrueNasZvol {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [Parameter(Mandatory = $true)]
+        [long]$VolumeSize,
+        [Parameter(Mandatory = $false)]
+        [string]$Comments,
+        [Parameter(Mandatory = $false)]
+        [switch]$ReadOnly
+    )
+
+    # Variables
+    $ApiSubPath = "/pool/dataset"
+
+    # Création de l'objet
+    $newObject = @{
+        type = "VOLUME";
+        name = $Name;
+        volsize = $VolumeSize
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if(![string]::IsNullOrEmpty($Comments)){
+            $newObject.Add("comments", $Comments)
+        }
+        if($ReadOnly.IsPresent){
+            $newObject.Add("readonly", "ON")
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    
+    return $result
+}
+
+function Remove-TrueNasDataset {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$Recurse,
+        [Parameter(Mandatory = $false)]
+        [switch]$Force
+    )
+    
+    # Variables
+    $ApiSubPath = "/pool/dataset/id/$Id"
+    
+    # Création de l'objet
+    $newObject = @{
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($KeepPrimaryGroup.Recurse){
+            $newObject.Add("recursive", $true)
+        }
+        if($KeepPrimaryGroup.Force){
+            $newObject.Add("force", $true)
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Delete -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasPoolDatasetAttachment {
     
     [CmdletBinding()]
