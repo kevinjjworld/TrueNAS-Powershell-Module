@@ -439,12 +439,14 @@ function Remove-TrueNasDataset {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [int]$Id,
+        [string]$Id,
         [Parameter(Mandatory = $false)]
         [switch]$Recurse,
         [Parameter(Mandatory = $false)]
         [switch]$Force
     )
+    
+    $Id = $Id -replace("/","%2F")
     
     # Variables
     $ApiSubPath = "/pool/dataset/id/$Id"
