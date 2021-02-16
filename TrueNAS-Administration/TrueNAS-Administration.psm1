@@ -291,6 +291,8 @@ function New-TrueNasZvol {
         [Parameter(Mandatory = $false)]
         [string]$Comments,
         [Parameter(Mandatory = $false)]
+        [switch]$ForceSize,
+        [Parameter(Mandatory = $false)]
         [switch]$ReadOnly
     )
 
@@ -307,6 +309,9 @@ function New-TrueNasZvol {
     #region Ajout des paramètres supplémentaires
         if(![string]::IsNullOrEmpty($Comments)){
             $newObject.Add("comments", $Comments)
+        }
+        if($ForceSize.IsPresent){
+            $newObject.Add("force_size", $true)
         }
         if($ReadOnly.IsPresent){
             $newObject.Add("readonly", "ON")
@@ -342,7 +347,7 @@ function Set-TrueNasDataset {
     
     # Variables
     $ApiSubPath = "/pool/dataset/id/$Id"
-    
+
     switch ($ReadOnly) {
         "True" { $ReadOnly = "ON" }
         "False" { $ReadOnly = "OFF" }
@@ -371,7 +376,7 @@ function Set-TrueNasDataset {
     
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method Delete -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    $result = Invoke-RestMethodOnFreeNAS -Method Set -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
