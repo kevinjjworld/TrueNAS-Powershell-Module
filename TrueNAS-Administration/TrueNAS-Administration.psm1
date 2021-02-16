@@ -211,6 +211,8 @@ function Get-TrueNasDataset {
         [string]$Id
     )
 
+    $Id = $Id -replace("/","%2F")
+
     # Variables
     $ApiSubPath = "/pool/dataset"
 
@@ -277,6 +279,63 @@ function New-TrueNasDataset {
     return $result
 }
 
+function Set-TrueNasDataset {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Id,
+        [Parameter(Mandatory = $false)]
+        [string]$Comments,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("PASSTHROUGH", "RESTRICTED")]
+        [string]$AclMode,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("True", "False", "ON", "OFF")]
+        [string]$ReadOnly
+    )
+    
+    $Id = $Id -replace("/","%2F")
+
+    # Variables
+    $ApiSubPath = "/pool/dataset/id/$Id"
+
+    switch ($ReadOnly) {
+        "True" { $ReadOnly = "ON" }
+        "False" { $ReadOnly = "OFF" }
+    }
+
+    # Création de l'objet
+    $newObject = @{
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if(![string]::IsNullOrEmpty($Comments)){
+            $newObject.Add("comments", $Comments)
+        }
+        if(![string]::IsNullOrEmpty($AclMode)){
+            $newObject.Add("aclmode", $AclMode)
+        }
+        if($ReadOnly -eq "ON"){
+            $newObject.Add("readonly", "ON")
+        }
+        if($ReadOnly -eq "OFF"){
+            $newObject.Add("readonly", "OFF")
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Put -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function New-TrueNasZvol {
     
     [CmdletBinding()]
@@ -302,7 +361,7 @@ function New-TrueNasZvol {
     # Création de l'objet
     $newObject = @{
         type = "VOLUME";
-        name = $Name;
+        name = $Name
         volsize = $VolumeSize
     }
 
@@ -326,7 +385,7 @@ function New-TrueNasZvol {
     return $result
 }
 
-function Set-TrueNasDataset {
+function Set-TrueNasZvol {
     
     [CmdletBinding()]
     Param
@@ -334,50 +393,41 @@ function Set-TrueNasDataset {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [int]$Id,
+        [string]$id,
+        [Parameter(Mandatory = $false)]
+        [long]$VolumeSize,
         [Parameter(Mandatory = $false)]
         [string]$Comments,
         [Parameter(Mandatory = $false)]
-        [ValidateSet("PASSTHROUGH", "RESTRICTED")]
-        [string]$AclMode,
-        [Parameter(Mandatory = $false)]
-        [ValidateSet("True", "False", "ON", "OFF")]
-        [string]$ReadOnly
+        [switch]$ForceSize
     )
-    
+
+    $Id = $Id -replace("/","%2F")
+
     # Variables
     $ApiSubPath = "/pool/dataset/id/$Id"
-
-    switch ($ReadOnly) {
-        "True" { $ReadOnly = "ON" }
-        "False" { $ReadOnly = "OFF" }
-    }
 
     # Création de l'objet
     $newObject = @{
     }
 
     #region Ajout des paramètres supplémentaires
-    if(![string]::IsNullOrEmpty($Comments)){
-        $newObject.Add("comments", $Comments)
-    }
-    if(![string]::IsNullOrEmpty($AclMode)){
-        $newObject.Add("aclmode", $AclMode)
-    }
-    if($ReadOnly -eq "ON"){
-        $newObject.Add("readonly", "ON")
-    }
-    if($ReadOnly -eq "OFF"){
-        $newObject.Add("readonly", "OFF")
-    }
+        if($VolumeSize -gt 0){
+            $newObject.Add("volsize", $VolumeSize)
+        }    
+        if(![string]::IsNullOrEmpty($Comments)){
+            $newObject.Add("comments", $Comments)
+        }
+        if($ForceSize.IsPresent){
+            $newObject.Add("force_size", $true)
+        }
     #endregion
 
     $body = $newObject | ConvertTo-Json
-    
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method Set -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
-
+    $result = Invoke-RestMethodOnFreeNAS -Method Put -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    
     return $result
 }
 
