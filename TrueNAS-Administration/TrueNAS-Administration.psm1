@@ -114,6 +114,56 @@ function Get-TrueNasInfo {
 
     return $result
 }
+function Get-TrueNasDisk {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [int]$Id
+    )
+
+    # Variables
+    $ApiSubPath = "/disk"
+
+    if ($Id) {
+        $ApiSubPath += "/id/" + $Id
+    }
+    
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Get-TrueNasDiskTemperature {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string[]]$Names
+    )
+
+    # Variables
+    $ApiSubPath = "/disk/temperatures"
+
+    # Création de l'objet
+    $newObject = @{
+        names = $Names
+    }
+    
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
 
 function Get-TrueNasPool {
     
