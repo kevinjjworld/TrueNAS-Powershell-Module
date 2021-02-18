@@ -386,6 +386,50 @@ function Set-TrueNasDataset {
     return $result
 }
 
+function Get-TrueNasDatasetChildItem {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("name", "path", "realpath", "type", "size", "mode", "acl", "uid", "gid")]
+        [string]$OrderBy,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("name", "path", "realpath", "type", "size", "mode", "acl", "uid", "gid")]
+        [string]$Select
+    )
+
+    # Variables
+    $ApiSubPath = "/filesystem/listdir"
+
+    # Création de l'objet
+    $newObject = @{
+        path = $Path;
+        "query-filters" = @();
+        "query-options" = @{};
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if(![string]::IsNullOrEmpty($OrderBy)){
+            $newObject.'query-options'.Add( "order_by", @($OrderBy.ToLower()) )
+        }
+        if(![string]::IsNullOrEmpty($Select)){
+            $newObject.'query-options'.Add( "select", @($Select.ToLower()) )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function New-TrueNasZvol {
     
     [CmdletBinding()]
