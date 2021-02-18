@@ -430,6 +430,41 @@ function Get-TrueNasChildItem {
     return $result
 }
 
+function Get-TrueNasPathAcl {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $false)]
+        [switch]$Simplified
+    )
+
+    # Variables
+    $ApiSubPath = "/filesystem/getacl"
+
+    # Création de l'objet
+    $newObject = @{
+        path = $Path
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($Simplified.IsPresent){
+            $newObject.Add( "simplified", $true )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function New-TrueNasZvol {
     
     [CmdletBinding()]
