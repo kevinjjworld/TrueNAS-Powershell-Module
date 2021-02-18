@@ -497,7 +497,7 @@ function Get-TrueNasDatasetAttachment {
     return $result
 }
 
-function Get-TrueNasPoolDatasetProcess {
+function Get-TrueNasDatasetProcess {
     
     [CmdletBinding()]
     Param
