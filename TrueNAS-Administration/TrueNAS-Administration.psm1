@@ -476,7 +476,7 @@ function Remove-TrueNasDataset {
 New-Alias -Name Remove-TrueNasZvol -Value Remove-TrueNasDataset
 
 
-function Get-TrueNasPoolDatasetAttachment {
+function Get-TrueNasDatasetAttachment {
     
     [CmdletBinding()]
     Param
