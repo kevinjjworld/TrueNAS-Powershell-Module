@@ -465,6 +465,18 @@ function Get-TrueNasPathAcl {
     return $result
 }
 
+function Set-TrueNasPathAcl {
+    # TODO
+}
+
+function Set-TrueNasPathPerm {
+    # TODO UNIX Permissions
+}
+
+function Set-TrueNasPathOwner {
+    # TODO
+}
+
 function New-TrueNasZvol {
     
     [CmdletBinding()]
@@ -1119,7 +1131,9 @@ function Get-TrueNasUser {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$IncludeDSCache
     )
     
     # Variables
@@ -1129,8 +1143,23 @@ function Get-TrueNasUser {
         $ApiSubPath += "/id/" + $Id
     }
 
+    # Création de l'objet
+    $newObject = @{
+        "query-filters" = @();
+        "query-options" = @{};
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($IncludeDSCache.IsPresent){
+            $newObject.'query-options'.Add( "extra", @{"search_dscache" = $true} )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
 }
@@ -1353,7 +1382,9 @@ function Get-TrueNasGroup {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$IncludeDSCache
     )
     
     # Variables
@@ -1363,8 +1394,23 @@ function Get-TrueNasGroup {
         $ApiSubPath += "/id/" + $Id
     }
 
+    # Création de l'objet
+    $newObject = @{
+        "query-filters" = @();
+        "query-options" = @{};
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($IncludeDSCache.IsPresent){
+            $newObject.'query-options'.Add( "extra", @{"search_dscache" = $true} )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
 
     return $result
