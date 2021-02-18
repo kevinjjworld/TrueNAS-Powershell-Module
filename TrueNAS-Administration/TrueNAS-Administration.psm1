@@ -386,7 +386,7 @@ function Set-TrueNasDataset {
     return $result
 }
 
-function Get-TrueNasDatasetChildItem {
+function Get-TrueNasChildItem {
     
     [CmdletBinding()]
     Param
