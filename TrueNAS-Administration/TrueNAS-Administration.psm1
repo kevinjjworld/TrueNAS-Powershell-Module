@@ -487,6 +487,8 @@ function Get-TrueNasDatasetAttachment {
         [string]$Id
     )
 
+    $Id = $Id -replace("/","%2F")
+
     # Variables
     $ApiSubPath = "/pool/dataset"
     $ApiSubPath += "/id/" + $Id + "/attachments"
@@ -507,6 +509,8 @@ function Get-TrueNasDatasetProcess {
         [Parameter(Mandatory = $true)]
         [string]$Id
     )
+
+    $Id = $Id -replace("/","%2F")
 
     # Variables
     $ApiSubPath = "/pool/dataset"
