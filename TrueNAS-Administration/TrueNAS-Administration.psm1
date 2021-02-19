@@ -698,6 +698,7 @@ function Set-TrueNasService {
         [int]$Id,
         [Parameter(Mandatory = $false)]
         [switch]$EnableAtStartup,
+        [Parameter(Mandatory = $false)]
         [switch]$DisableAtStartup
     )
 
@@ -730,6 +731,34 @@ function Set-TrueNasService {
     return $result
 }
 
+function Enable-TrueNasService {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [int]$Id
+    )
+
+    return (Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -DisableAtStartup)
+}
+
+function Disable-TrueNasService {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [int]$Id
+    )
+
+    return (Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -Disabl)
+}
+
 function Start-TrueNasService {
     
     [CmdletBinding()]
@@ -739,6 +768,7 @@ function Start-TrueNasService {
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
         [string]$ServiceName,
+        [Parameter(Mandatory = $false)]
         [switch]$HaPropagate
     )
 
@@ -777,6 +807,7 @@ function Stop-TrueNasService {
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
         [string]$ServiceName,
+        [Parameter(Mandatory = $false)]
         [switch]$HaPropagate
     )
 
@@ -815,6 +846,7 @@ function Restart-TrueNasService {
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
         [string]$ServiceName,
+        [Parameter(Mandatory = $false)]
         [switch]$HaPropagate
     )
 
