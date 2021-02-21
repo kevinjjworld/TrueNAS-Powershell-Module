@@ -60,8 +60,7 @@ function Get-TrueNasSeesion {
         throw $_
     }
     
-    #Write-Verbose -Message "Connecté à $($result.info.title) $($result.info.version)"
-    Write-Host -ForegroundColor Cyan -Message "Connecté à $apiFullUri - $($result.info.title) $($result.info.version)"
+    Write-Verbose -Message "Connecté à $apiFullUri - $($result.info.title) $($result.info.version)"
     
     $TrueNasSession = New-Object -TypeName TrueNasSession -ArgumentList @($Server, $Port, $CurrentSession, $SkipCertificateCheck, $result.info.title, $result.info.version)
 
