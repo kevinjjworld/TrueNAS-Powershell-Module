@@ -742,7 +742,7 @@ function Enable-TrueNasService {
         [int]$Id
     )
 
-    return (Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -DisableAtStartup)
+    return (Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -EnableAtStartup)
 }
 
 function Disable-TrueNasService {
@@ -756,7 +756,7 @@ function Disable-TrueNasService {
         [int]$Id
     )
 
-    return (Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -Disabl)
+    return (Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -DisableAtStartup)
 }
 
 function Start-TrueNasService {
