@@ -36,11 +36,11 @@ Get-Command -Module "TrueNAS-Administration"
 #### 1. Get a session and store it in a variable
 * If you have a valid certificate :
 ```Powershell
-$Session = Get-TrueNasSeesion -Server "truenas" -APIToken "1-xxxxxxxxxxx"
+$Session = Get-TrueNasSession -Server "truenas" -APIToken "1-xxxxxxxxxxx"
 ```
 * If you don't have a valid certificate, use the parameter `-SkipCertificateCheck` :
 ```Powershell
-$Session = Get-TrueNasSeesion -Server "truenas" -APIToken "1-xxxxxxxxxxx" -SkipCertificateCheck
+$Session = Get-TrueNasSession -Server "truenas" -APIToken "1-xxxxxxxxxxx" -SkipCertificateCheck
 ```
 #### 2. Run Cmdlets using the previous variable containing the session. For example :
 ```Powershell
