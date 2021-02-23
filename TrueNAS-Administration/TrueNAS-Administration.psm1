@@ -132,6 +132,24 @@ function Get-TrueNasAlert {
     return $result
 }
 
+function Get-TrueNasAlertCategories {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    # Variables
+    $ApiSubPath = "/alert/list_categories"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasDisk {
     
     [CmdletBinding()]
