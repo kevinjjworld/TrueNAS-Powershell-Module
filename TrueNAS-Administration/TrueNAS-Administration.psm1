@@ -150,6 +150,24 @@ function Get-TrueNasAlertCategories {
     return $result
 }
 
+function Get-TrueNasAlertPolicies {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    # Variables
+    $ApiSubPath = "/alert/list_policies"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasDisk {
     
     [CmdletBinding()]
