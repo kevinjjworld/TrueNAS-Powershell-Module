@@ -30,7 +30,7 @@ class TrueNasSession {
     }
 }
 
-function Get-TrueNasSeesion {
+function Get-TrueNasSession {
     
     [CmdletBinding()]
     Param
