@@ -66,6 +66,25 @@ function Get-TrueNasSession {
 
     return $TrueNasSession
 }
+
+function Get-TrueNasActiveSession {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    # Variables
+    $ApiSubPath = "/auth/sessions"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Invoke-RestMethodOnFreeNAS {
     
     [CmdletBinding()]
