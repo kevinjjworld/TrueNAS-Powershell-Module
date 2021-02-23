@@ -193,6 +193,31 @@ function Unregister-TrueNasAlert {
     return $result
 }
 
+function Restore-TrueNasAlert {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+         [Parameter(Mandatory = $true)]
+        [string]$Id
+    )
+
+    # Variables
+    $ApiSubPath = "/alert/restore"
+
+    # Création de l'objet
+    $newObject = $Id
+
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasDisk {
     
     [CmdletBinding()]
