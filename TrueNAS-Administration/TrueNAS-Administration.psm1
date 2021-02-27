@@ -1404,6 +1404,61 @@ function Start-TrueNasVM {
     return $result
 }
 
+function Stop-TrueNasVM {
+
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$Force
+    )
+    
+    # Variables
+    $ApiSubPath = "/vm/id/$id/stop"
+
+    # Création de l'objet
+    $newObject = @{
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($Force.IsPresent){
+            $newObject.Add( "force", $true )
+            $newObject.Add( "force_after_timeout", $true )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    
+    return $result
+}
+
+function Restart-TrueNasVM {
+
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [int]$Id
+    )
+    
+    # Variables
+    $ApiSubPath = "/vm/id/$id/restart"
+    
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    
+    return $result
+}
+
 function Get-TrueNasVMCPUFlag {
 
     [CmdletBinding()]
