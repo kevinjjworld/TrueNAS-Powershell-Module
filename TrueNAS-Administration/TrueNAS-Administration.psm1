@@ -1133,6 +1133,24 @@ function Get-TrueNasGeneralConfig {
     return $result
 }
 
+function Restart-TrueNasWebUIService {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    # Variables
+    $ApiSubPath = "/system/general/ui_restart"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasNTPServer {
     
     [CmdletBinding()]
