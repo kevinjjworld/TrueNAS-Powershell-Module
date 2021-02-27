@@ -2061,3 +2061,117 @@ function Remove-TrueNasGroup {
 
     return $result
 }
+
+function Get-TrueNasGroup {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$IncludeDSCache
+    )
+    
+    # Variables
+    $ApiSubPath = "/group"
+
+    if ($Id) {
+        $ApiSubPath += "/id/" + $Id
+    }
+
+    # Création de l'objet
+    $newObject = @{
+        "query-filters" = @();
+        "query-options" = @{};
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($IncludeDSCache.IsPresent){
+            $newObject.'query-options'.Add( "extra", @{"search_dscache" = $true} )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    
+
+    return $result
+}
+
+function Get-TrueNasActiveDirectoryConfig {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+    
+    # Variables
+    $ApiSubPath = "/activedirectory"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Get-TrueNasActiveDirectoryDomainInfo {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+    
+    # Variables
+    $ApiSubPath = "/activedirectory/domain_info"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Get-TrueNasActiveDirectoryServiceState {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+    
+    # Variables
+    $ApiSubPath = "/activedirectory/get_state"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Test-TrueNasActiveDirectory {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+    
+    # Variables
+    $ApiSubPath = "/activedirectory/started"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
