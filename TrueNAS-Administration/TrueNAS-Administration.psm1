@@ -1238,6 +1238,73 @@ function Get-TrueNasUpdateTrain {
     return $result
 }
 
+function Get-TrueNasUpdateAutoDownload {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    # Variables
+    $ApiSubPath = "/update/get_auto_download"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Set-TrueNasUpdateAutoDownload {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [bool]$Value
+    )
+
+    # Variables
+    $ApiSubPath = "/update/set_auto_download"
+
+    # Création de l'objet
+    $newObject = $Value
+
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Enable-TrueNasUpdateAutoDownload {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    return Set-TrueNasUpdateAutoDownload -TrueNasSession $TrueNasSession -Value $true
+}
+
+function Disable-TrueNasUpdateAutoDownload {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    return Set-TrueNasUpdateAutoDownload -TrueNasSession $TrueNasSession -Value $false
+}
+
 function Get-TrueNasUpdateAvailable {
     
     [CmdletBinding()]
@@ -1257,6 +1324,38 @@ function Get-TrueNasUpdateAvailable {
 }
 
 New-Alias -Name Get-TrueNasUpdateStatus -Value Get-TrueNasUpdateAvailable
+
+function Update-TrueNas {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [switch]$RestartAfter
+    )
+    
+    # Variables
+    $ApiSubPath = "/update/update"
+
+    # Création de l'objet
+    $newObject = @{
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($RestartAfter.IsPresent){
+            $newObject.Add("reboot", $true)
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
 
 function Get-TrueNasGeneralConfig {
     
