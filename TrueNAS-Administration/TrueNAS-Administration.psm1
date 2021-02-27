@@ -1218,7 +1218,7 @@ function Get-TrueNasUpdateTrain {
 
     return $result
 }
-function Get-TrueNasUpdateStatus {
+function Get-TrueNasUpdateAvailable {
     
     [CmdletBinding()]
     Param
@@ -1235,6 +1235,8 @@ function Get-TrueNasUpdateStatus {
 
     return $result
 }
+
+New-Alias -Name Get-TrueNasUpdateStatus -Value Get-TrueNasUpdateAvailable
 
 function Get-TrueNasGeneralConfig {
     
