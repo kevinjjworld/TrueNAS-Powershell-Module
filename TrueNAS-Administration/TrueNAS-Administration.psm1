@@ -1370,6 +1370,40 @@ function Get-TrueNasVM {
     return $result
 }
 
+function Start-TrueNasVM {
+
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$Force
+    )
+    
+    # Variables
+    $ApiSubPath = "/vm/id/$id/start"
+
+    # Création de l'objet
+    $newObject = @{
+    }
+
+    #region Ajout des paramètres supplémentaires
+        if($Force.IsPresent){
+            $newObject.Add( "overcommit", $true )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    
+    return $result
+}
+
 function Get-TrueNasVMCPUFlag {
 
     [CmdletBinding()]
