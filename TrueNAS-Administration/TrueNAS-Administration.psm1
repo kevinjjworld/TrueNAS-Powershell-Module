@@ -115,6 +115,106 @@ function Invoke-RestMethodOnFreeNAS {
     return $result
 }
 
+function Get-TrueNasState {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    # Variables
+    $ApiSubPath = "/system/state"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Stop-TrueNas {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [int]$Delay
+    )
+
+    # Variables
+    $ApiSubPath = "/system/shutdown"
+
+    # Création de l'objet
+    $newObject = @{
+    }
+    
+    #region Ajout des paramètres supplémentaires
+        if($Delay -gt 0){
+            $newObject.Add( "delay", $Delay )
+        }
+    #endregion
+    
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Restart-TrueNas {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [int]$Delay
+    )
+
+    # Variables
+    $ApiSubPath = "/system/reboot"
+
+    # Création de l'objet
+    $newObject = @{
+    }
+    
+    #region Ajout des paramètres supplémentaires
+        if($Delay -gt 0){
+            $newObject.Add( "delay", $Delay )
+        }
+    #endregion
+    
+    $body = $newObject | ConvertTo-Json
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Get-TrueNasVersion {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    # Variables
+    $ApiSubPath = "/system/version"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasInfo {
     
     [CmdletBinding()]
