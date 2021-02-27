@@ -173,7 +173,9 @@ function Restart-TrueNas {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Delay
+        [int]$Delay,
+        [Parameter(Mandatory = $false)]
+        [switch]$Wait
     )
 
     # Variables
@@ -192,7 +194,26 @@ function Restart-TrueNas {
     $body = $newObject | ConvertTo-Json
 
     # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    Write-Verbose "$($TrueNasSession.Server) will restart in $Delay seconde(s)"
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath -ErrorAction Stop
+    
+    if($Wait.IsPresent){
+        
+        Start-Sleep -Seconds ($Delay + 5)
+        while($curState -ne "READY"){
+            
+            try {
+                $curState = Get-TrueNasState -TrueNasSession $TrueNasSession
+            }
+            catch {
+                $curState = $_.Exception.Message
+            }
+            
+            Write-Verbose "$($TrueNasSession.Server) state : $curState"
+            Start-Sleep -Seconds 10
+        }
+
+    }
 
     return $result
 }
@@ -1325,8 +1346,6 @@ function Get-TrueNasAvailableShell {
     return $result
 }
 
-
-
 function Get-TrueNasVM {
 
     [CmdletBinding()]
@@ -1344,6 +1363,24 @@ function Get-TrueNasVM {
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    
+    return $result
+}
+
+function Get-TrueNasVMCPUFlag {
+
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+    
+    # Variables
+    $ApiSubPath = "/vm/flags"
 
     # Lancement de la requête
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
