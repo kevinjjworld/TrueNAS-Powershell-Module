@@ -1201,6 +1201,25 @@ function Get-TrueNasSSHConfig {
     
     return $result
 }
+
+function Get-TrueNasUpdate {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+    
+    # Variables
+    $ApiSubPath = "/update/download"
+
+    # Lancement de la requête
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasUpdateTrain {
     
     [CmdletBinding()]
@@ -1218,6 +1237,7 @@ function Get-TrueNasUpdateTrain {
 
     return $result
 }
+
 function Get-TrueNasUpdateAvailable {
     
     [CmdletBinding()]
