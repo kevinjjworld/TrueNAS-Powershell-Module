@@ -1,16 +1,23 @@
-# TrueNAS-Administration functions
+using namespace System.Net
+using namespace System.Security.Cryptography.X509Certificates
+
+class TrustAllCertsPolicy : ICertificatePolicy {
+    [bool]CheckValidationResult([ServicePoint]$srvPoint, [X509Certificate]$certificate, [WebRequest]$request, [int]$certificateProblem) {
+        return $true;
+    }
+}
 
 class TrueNasSession {
     # Properties
     [String] $Server
     [int] $Port
-    [Microsoft.PowerShell.Commands.WebRequestSession] $WebSession
+    [System.Object] $WebSession
     [bool] $SkipCertificateCheck
     [String] $ApiName
     [String] $Version
 
     # Constructor
-    TrueNasSession ([String] $Server, [int] $Port, [Microsoft.PowerShell.Commands.WebRequestSession] $WebSession, [bool] $SkipCertificateCheck, [String] $ApiName, [string] $Version) {
+    TrueNasSession ([String] $Server, [int] $Port, [System.Object] $WebSession, [bool] $SkipCertificateCheck, [String] $ApiName, [string] $Version) {
         $this.Server = $Server
         $this.Port = $Port
         $this.WebSession = $WebSession
@@ -49,12 +56,25 @@ function Get-TrueNasSession {
     
     $apiFullUri = [string]::Format("https://{0}:{1}/api/v2.0/", $Server, $Port)
 
-    $headers = @{ "Content-type" = "application/json"; "Authorization" = "Bearer " + $apiToken }
+    #$headers = @{ "Content-type" = "application/json"; "Authorization" = "Bearer " + $apiToken }
+    $headers = @{ "Authorization" = "Bearer " + $apiToken }
 
     # Connexion à l'API
     try {
-        $result = Invoke-RestMethod -Uri $apiFullUri -Method Get -Headers $headers -SkipCertificateCheck:$SkipCertificateCheck `
-                                    -SessionVariable CurrentSession
+        
+        if($PSVersionTable.PSVersion.Major -le 5 -AND $SkipCertificateCheck.IsPresent){
+            [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+        }
+
+        if($PSVersionTable.PSVersion.Major -gt 5){
+            $result = Invoke-RestMethod -Uri $apiFullUri -Method Get -Headers $headers -SkipCertificateCheck:$SkipCertificateCheck `
+                                        -ContentType "Application/Json" -SessionVariable CurrentSession
+        }
+        else {
+            $result = Invoke-RestMethod -Uri $apiFullUri -Method Get -Headers $headers `
+                                        -ContentType "Application/Json" -SessionVariable CurrentSession
+        }
+        
     }
     catch {
         throw $_
@@ -101,7 +121,7 @@ function Invoke-RestMethodOnFreeNAS {
         [String]$Method = "GET"
     )
 
-    if(!$Body){
+    if(!$Body) {
         $Body = [string]::Empty
     }
     
@@ -109,8 +129,19 @@ function Invoke-RestMethodOnFreeNAS {
     $apiFullUri = [System.IO.Path]::Combine($TrueNasSession.GetApiUri(), $ApiSubPath)
 
     # Lancement de la requête
-    $result = Invoke-RestMethod -Uri $apiFullUri -SkipCertificateCheck:($TrueNasSession.SkipCertificateCheck) `
+    if($PSVersionTable.PSVersion.Major -le 5 -AND $SkipCertificateCheck.IsPresent){
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    }
+    
+    if($PSVersionTable.PSVersion.Major -gt 5) {
+        $result = Invoke-RestMethod -Uri $apiFullUri -SkipCertificateCheck:($TrueNasSession.SkipCertificateCheck) `
                                 -Method $Method -Body $Body -WebSession $TrueNasSession.WebSession
+    }
+    else {
+        $result = Invoke-RestMethod -Uri $apiFullUri `
+                                -Method $Method -Body $Body -WebSession $TrueNasSession.WebSession
+    }
+    
 
     return $result
 }
