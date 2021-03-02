@@ -47,53 +47,44 @@ function Get-TrueNasSession {
     
     $apiFullUri = [string]::Format("https://{0}:{1}/api/v2.0/", $Server, $Port)
 
-    #$headers = @{ "Content-type" = "application/json"; "Authorization" = "Bearer " + $apiToken }
-    $headers = @{ "Authorization" = "Bearer " + $apiToken }
+    $params = @{
+        Uri = $apiFullUri;
+        Method = "Get";
+        Headers = @{ "Authorization" = "Bearer " + $apiToken };
+        SkipCertificateCheck = $SkipCertificateCheck.IsPresent;
+        ContentType = "Application/Json";
+        SessionVariable = "CurrentSession"
+    }
 
-    # Connexion à l'API
+
     try {
         
-        if($PSVersionTable.PSVersion.Major -le 5 -AND $SkipCertificateCheck.IsPresent){
-            [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+        # Some specifications depending on Powershell version
+        switch ($PSVersionTable.PSVersion.Major) {
+            {$_ -le 5} {
+                if ($SkipCertificateCheck.IsPresent) {
+                    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+                    $params.Remove("SkipCertificateCheck")
+                }
+                break
+            }
+
+            Default {}
         }
 
-        if($PSVersionTable.PSVersion.Major -gt 5){
-            $result = Invoke-RestMethod -Uri $apiFullUri -Method Get -Headers $headers -SkipCertificateCheck:$SkipCertificateCheck `
-                                        -ContentType "Application/Json" -SessionVariable CurrentSession
-        }
-        else {
-            $result = Invoke-RestMethod -Uri $apiFullUri -Method Get -Headers $headers `
-                                        -ContentType "Application/Json" -SessionVariable CurrentSession
-        }
+        # API Connection
+        $result = Invoke-RestMethod @params
         
     }
     catch {
         throw $_
     }
     
-    Write-Verbose -Message "Connected to $apiFullUri - $($result.info.title) $($result.info.version)"
     
+    Write-Verbose -Message "Connected to $apiFullUri - $($result.info.title) $($result.info.version)"
     $TrueNasSession = New-Object -TypeName TrueNasSession -ArgumentList @($Server, $Port, $CurrentSession, $SkipCertificateCheck, $result.info.title, $result.info.version)
 
     return $TrueNasSession
-}
-
-function Get-TrueNasActiveSession {
-    
-    [CmdletBinding()]
-    Param
-    (
-        [Parameter(Mandatory = $true)]
-        [TrueNasSession]$TrueNasSession
-    )
-
-    # Variables
-    $ApiSubPath = "/auth/sessions"
-
-    # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
-
-    return $result
 }
 
 function Invoke-RestMethodOnFreeNAS {
@@ -111,28 +102,44 @@ function Invoke-RestMethodOnFreeNAS {
         [ValidateSet("GET", "PUT", "POST", "DELETE")]
         [String]$Method = "GET"
     )
-
-    if(!$Body) {
-        $Body = [string]::Empty
-    }
+    
     
     $ApiSubPath = $ApiSubPath -replace("^/","")
     $apiFullUri = [System.IO.Path]::Combine($TrueNasSession.GetApiUri(), $ApiSubPath)
 
-    # Lancement de la requête
-    if($PSVersionTable.PSVersion.Major -le 5 -AND $SkipCertificateCheck.IsPresent){
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    $params = @{
+        Uri = $apiFullUri;
+        SkipCertificateCheck = $TrueNasSession.SkipCertificateCheck;
+        Method = $Method;
+        Body = $Body;
+        WebSession = $TrueNasSession.WebSession
     }
+
+    if([string]::IsNullOrEmpty($params.Body)) {
+        $params.Remove("Body")
+    }
+
+    # Some specifications depending on Powershell version
+    switch ($PSVersionTable.PSVersion.Major) {
+        {$_ -le 5} {
+            if ($Method -eq "Get" -and ![string]::IsNullOrEmpty($Body)) {
+                $params.Remove("Body")
+                Write-Warning -Message "Body parameters for GET are not supported on your version of Powershell. Powershell Core 6 minimum required."
+            }
+
+            if ($TrueNasSession.SkipCertificateCheck) {
+                [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+                $params.Remove("SkipCertificateCheck")
+            }
+
+            break
+        }
+
+        Default {}
+    }
+
     
-    if($PSVersionTable.PSVersion.Major -gt 5) {
-        $result = Invoke-RestMethod -Uri $apiFullUri -SkipCertificateCheck:($TrueNasSession.SkipCertificateCheck) `
-                                -Method $Method -Body $Body -WebSession $TrueNasSession.WebSession
-    }
-    else {
-        $result = Invoke-RestMethod -Uri $apiFullUri `
-                                -Method $Method -Body $Body -WebSession $TrueNasSession.WebSession
-    }
-    
+    $result = Invoke-RestMethod @params
 
     return $result
 }
@@ -146,10 +153,28 @@ function Get-TrueNasState {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/system/state"
 
-    # Lancement de la requête
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Get-TrueNasActiveSession {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    
+    $ApiSubPath = "/auth/sessions"
+
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -166,14 +191,14 @@ function Stop-TrueNas {
         [int]$Delay
     )
 
-    # Variables
+    
     $ApiSubPath = "/system/shutdown"
 
-    # Création de l'objet
+    
     $newObject = @{
     }
     
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($Delay -gt 0){
             $newObject.Add( "delay", $Delay )
         }
@@ -181,7 +206,7 @@ function Stop-TrueNas {
     
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -200,14 +225,14 @@ function Restart-TrueNas {
         [switch]$Wait
     )
 
-    # Variables
+    
     $ApiSubPath = "/system/reboot"
 
-    # Création de l'objet
+    
     $newObject = @{
     }
     
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($Delay -gt 0){
             $newObject.Add( "delay", $Delay )
         }
@@ -215,7 +240,7 @@ function Restart-TrueNas {
     
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     Write-Verbose "$($TrueNasSession.Server) will restart in $Delay seconde(s)"
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath -ErrorAction Stop
     
@@ -249,10 +274,10 @@ function Get-TrueNasVersion {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/system/version"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -267,10 +292,10 @@ function Get-TrueNasInfo {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/system/info"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -285,10 +310,10 @@ function Get-TrueNasAlert {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/alert/list"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -303,10 +328,10 @@ function Get-TrueNasAlertCategories {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/alert/list_categories"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -321,10 +346,10 @@ function Get-TrueNasAlertPolicies {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/alert/list_policies"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -341,15 +366,15 @@ function Unregister-TrueNasAlert {
         [string]$Id
     )
 
-    # Variables
+    
     $ApiSubPath = "/alert/dismiss"
 
-    # Création de l'objet
+    
     $newObject = $Id
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -366,15 +391,15 @@ function Restore-TrueNasAlert {
         [string]$Id
     )
 
-    # Variables
+    
     $ApiSubPath = "/alert/restore"
 
-    # Création de l'objet
+    
     $newObject = $Id
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -391,14 +416,14 @@ function Get-TrueNasDisk {
         [int]$Id
     )
 
-    # Variables
+    
     $ApiSubPath = "/disk"
 
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
     
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -415,17 +440,17 @@ function Get-TrueNasDiskTemperature {
         [string[]]$Names
     )
 
-    # Variables
+    
     $ApiSubPath = "/disk/temperatures"
 
-    # Création de l'objet
+    
     $newObject = @{
         names = $Names
     }
     
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -442,14 +467,14 @@ function Get-TrueNasPool {
         [int]$Id
     )
 
-    # Variables
+    
     $ApiSubPath = "/pool"
 
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -466,10 +491,10 @@ function Get-TrueNasPoolAttachement {
         [int]$Id
     )
 
-    # Variables
+    
     $ApiSubPath = "/pool/id/$id/attachments"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
 
@@ -487,10 +512,10 @@ function Get-TrueNasPoolProcess {
         [int]$Id
     )
     
-    # Variables
+    
     $ApiSubPath = "/pool/id/$id/processes"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -507,10 +532,10 @@ function Get-TrueNasPoolDisk {
         [int]$Id
     )
 
-    # Variables
+    
     $ApiSubPath = "/pool/id/$id/get_disks"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -529,14 +554,14 @@ function Get-TrueNasDataset {
 
     $Id = $Id -replace("/","%2F")
 
-    # Variables
+    
     $ApiSubPath = "/pool/dataset"
 
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -563,16 +588,16 @@ function New-TrueNasDataset {
         [switch]$ReadOnly
     )
 
-    # Variables
+    
     $ApiSubPath = "/pool/dataset"
 
-    # Création de l'objet
+    
     $newObject = @{
         type = "FILESYSTEM";
         name = $Name
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if(![string]::IsNullOrEmpty($ShareType)){
             $newObject.Add("share_type", $ShareType)
         }
@@ -589,7 +614,7 @@ function New-TrueNasDataset {
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -616,7 +641,7 @@ function Set-TrueNasDataset {
     
     $Id = $Id -replace("/","%2F")
 
-    # Variables
+    
     $ApiSubPath = "/pool/dataset/id/$Id"
 
     switch ($ReadOnly) {
@@ -624,11 +649,11 @@ function Set-TrueNasDataset {
         "False" { $ReadOnly = "OFF" }
     }
 
-    # Création de l'objet
+    
     $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if(![string]::IsNullOrEmpty($Comments)){
             $newObject.Add("comments", $Comments)
         }
@@ -646,7 +671,7 @@ function Set-TrueNasDataset {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Put -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -669,17 +694,17 @@ function Get-TrueNasChildItem {
         [string]$Select
     )
 
-    # Variables
+    
     $ApiSubPath = "/filesystem/listdir"
 
-    # Création de l'objet
+    
     $newObject = @{
         path = $Path;
         "query-filters" = @();
         "query-options" = @{};
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if(![string]::IsNullOrEmpty($OrderBy)){
             $newObject.'query-options'.Add( "order_by", @($OrderBy.ToLower()) )
         }
@@ -690,7 +715,7 @@ function Get-TrueNasChildItem {
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -709,15 +734,15 @@ function Get-TrueNasPathAcl {
         [switch]$Simplified
     )
 
-    # Variables
+    
     $ApiSubPath = "/filesystem/getacl"
 
-    # Création de l'objet
+    
     $newObject = @{
         path = $Path
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($Simplified.IsPresent){
             $newObject.Add( "simplified", $true )
         }
@@ -725,7 +750,7 @@ function Get-TrueNasPathAcl {
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -762,17 +787,17 @@ function New-TrueNasZvol {
         [switch]$ReadOnly
     )
 
-    # Variables
+    
     $ApiSubPath = "/pool/dataset"
 
-    # Création de l'objet
+    
     $newObject = @{
         type = "VOLUME";
         name = $Name
         volsize = $VolumeSize
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if(![string]::IsNullOrEmpty($Comments)){
             $newObject.Add("comments", $Comments)
         }
@@ -786,7 +811,7 @@ function New-TrueNasZvol {
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -811,14 +836,14 @@ function Set-TrueNasZvol {
 
     $Id = $Id -replace("/","%2F")
 
-    # Variables
+    
     $ApiSubPath = "/pool/dataset/id/$Id"
 
-    # Création de l'objet
+    
     $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($VolumeSize -gt 0){
             $newObject.Add("volsize", $VolumeSize)
         }    
@@ -832,7 +857,7 @@ function Set-TrueNasZvol {
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Put -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -855,14 +880,14 @@ function Remove-TrueNasDataset {
     
     $Id = $Id -replace("/","%2F")
     
-    # Variables
+    
     $ApiSubPath = "/pool/dataset/id/$Id"
     
-    # Création de l'objet
+    
     $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($Recurse.IsPresent){
             $newObject.Add("recursive", $true)
         }
@@ -874,7 +899,7 @@ function Remove-TrueNasDataset {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Delete -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -896,11 +921,11 @@ function Get-TrueNasDatasetAttachment {
 
     $Id = $Id -replace("/","%2F")
 
-    # Variables
+    
     $ApiSubPath = "/pool/dataset"
     $ApiSubPath += "/id/" + $Id + "/attachments"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -919,11 +944,11 @@ function Get-TrueNasDatasetProcess {
 
     $Id = $Id -replace("/","%2F")
 
-    # Variables
+    
     $ApiSubPath = "/pool/dataset"
     $ApiSubPath += "/id/" + $Id + "/processes"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -940,14 +965,14 @@ function Get-TrueNasService {
         [int]$Id
     )
 
-    # Variables
+    
     $ApiSubPath = "/service"
 
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -972,14 +997,14 @@ function Set-TrueNasService {
         throw "-EnableAtStartup et -DisableAtStartup ne peuvent pas être utilisés dans la même commande."
     }
 
-    # Variables
+    
     $ApiSubPath += "/service/id/$Id"
 
-     # Création de l'objet
+     
      $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($EnableAtStartup.IsPresent) {
             $newObject.Add("enable", $true)
         }
@@ -991,7 +1016,7 @@ function Set-TrueNasService {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Put -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1038,15 +1063,15 @@ function Start-TrueNasService {
         [switch]$HaPropagate
     )
 
-    # Variables
+    
     $ApiSubPath += "/service/start"
 
-     # Création de l'objet
+     
      $newObject = @{
         service = $ServiceName
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($HaPropagate.IsPresent) {
             $newObject.Add(
                 "service-control",
@@ -1058,7 +1083,7 @@ function Start-TrueNasService {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1077,15 +1102,15 @@ function Stop-TrueNasService {
         [switch]$HaPropagate
     )
 
-    # Variables
+    
     $ApiSubPath += "/service/stop"
 
-     # Création de l'objet
+     
      $newObject = @{
         service = $ServiceName
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($HaPropagate.IsPresent) {
             $newObject.Add(
                 "service-control",
@@ -1097,7 +1122,7 @@ function Stop-TrueNasService {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1116,15 +1141,15 @@ function Restart-TrueNasService {
         [switch]$HaPropagate
     )
 
-    # Variables
+    
     $ApiSubPath += "/service/restart"
 
-     # Création de l'objet
+     
      $newObject = @{
         service = $ServiceName
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($HaPropagate.IsPresent) {
             $newObject.Add(
                 "service-control",
@@ -1136,7 +1161,7 @@ function Restart-TrueNasService {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1156,7 +1181,7 @@ function Get-TrueNasSharing {
         [int]$Id
     )
 
-    # Variables
+    
     $Type = $Type.ToLower()
     $ApiSubPath = "/sharing/$Type"
 
@@ -1164,7 +1189,7 @@ function Get-TrueNasSharing {
         $ApiSubPath += "/id/" + $Id
     }
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1179,10 +1204,10 @@ function Get-TrueNasSMBConfig {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/smb"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1197,10 +1222,10 @@ function Get-TrueNasSMBStatus {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/smb/status"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1215,10 +1240,10 @@ function Get-TrueNasSSHConfig {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/ssh"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1233,10 +1258,10 @@ function Get-TrueNasUpdate {
         [TrueNasSession]$TrueNasSession
     )
     
-    # Variables
+    
     $ApiSubPath = "/update/download"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1251,10 +1276,10 @@ function Get-TrueNasUpdateTrain {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/update/get_trains"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1269,10 +1294,10 @@ function Get-TrueNasUpdateAutoDownload {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/update/get_auto_download"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1289,15 +1314,15 @@ function Set-TrueNasUpdateAutoDownload {
         [bool]$Value
     )
 
-    # Variables
+    
     $ApiSubPath = "/update/set_auto_download"
 
-    # Création de l'objet
+    
     $newObject = $Value
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1336,10 +1361,10 @@ function Get-TrueNasUpdateAvailable {
         [TrueNasSession]$TrueNasSession
     )
     
-    # Variables
+    
     $ApiSubPath = "/update/check_available"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1358,14 +1383,14 @@ function Update-TrueNas {
         [switch]$RestartAfter
     )
     
-    # Variables
+    
     $ApiSubPath = "/update/update"
 
-    # Création de l'objet
+    
     $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($RestartAfter.IsPresent){
             $newObject.Add("reboot", $true)
         }
@@ -1373,7 +1398,7 @@ function Update-TrueNas {
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1388,10 +1413,10 @@ function Get-TrueNasGeneralConfig {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/system/general"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1406,10 +1431,10 @@ function Restart-TrueNasWebUIService {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/system/general/ui_restart"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1424,10 +1449,10 @@ function Get-TrueNasNTPServer {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/system/ntpserver"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1442,10 +1467,10 @@ function Get-TrueNasSystemDataset {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/systemdataset"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1460,10 +1485,10 @@ function Get-TrueNasTunable {
         [TrueNasSession]$TrueNasSession
     )
 
-    # Variables
+    
     $ApiSubPath = "/tunable"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1480,10 +1505,10 @@ function Get-TrueNasAvailableShell {
         [TrueNasSession]$TrueNasSession
     )
     
-    # Variables
+    
     $ApiSubPath = "/user/shell_choices"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1500,14 +1525,14 @@ function Get-TrueNasVM {
         [int]$Id
     )
     
-    # Variables
+    
     $ApiSubPath = "/vm"
 
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1526,14 +1551,14 @@ function Start-TrueNasVM {
         [switch]$Force
     )
     
-    # Variables
+    
     $ApiSubPath = "/vm/id/$id/start"
 
-    # Création de l'objet
+    
     $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($Force.IsPresent){
             $newObject.Add( "overcommit", $true )
         }
@@ -1541,7 +1566,7 @@ function Start-TrueNasVM {
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1560,14 +1585,14 @@ function Stop-TrueNasVM {
         [switch]$Force
     )
     
-    # Variables
+    
     $ApiSubPath = "/vm/id/$id/stop"
 
-    # Création de l'objet
+    
     $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($Force.IsPresent){
             $newObject.Add( "force", $true )
             $newObject.Add( "force_after_timeout", $true )
@@ -1576,7 +1601,7 @@ function Stop-TrueNasVM {
 
     $body = $newObject | ConvertTo-Json
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1593,10 +1618,10 @@ function Restart-TrueNasVM {
         [int]$Id
     )
     
-    # Variables
+    
     $ApiSubPath = "/vm/id/$id/restart"
     
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1611,10 +1636,10 @@ function Get-TrueNasVMCPUFlag {
         [TrueNasSession]$TrueNasSession
     )
     
-    # Variables
+    
     $ApiSubPath = "/vm/flags"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1631,10 +1656,10 @@ function Get-TrueNasVMMemoryUsage {
         [int]$Id
     )
     
-    # Variables
+    
     $ApiSubPath = "/vm/get_vmemory_in_use"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1651,14 +1676,14 @@ function Get-TrueNasVMDevices {
         [int]$Id
     )
     
-    # Variables
+    
     $ApiSubPath = "/vm/device"
 
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
     
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1678,20 +1703,20 @@ function Get-TrueNasUser {
         [switch]$IncludeDSCache
     )
     
-    # Variables
+    
     $ApiSubPath = "/user"
 
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
-    # Création de l'objet
+    
     $newObject = @{
         "query-filters" = @();
         "query-options" = @{};
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($IncludeDSCache.IsPresent){
             $newObject.'query-options'.Add( "extra", @{"search_dscache" = $true} )
         }
@@ -1700,7 +1725,7 @@ function Get-TrueNasUser {
     $body = $newObject | ConvertTo-Json
 
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
@@ -1736,17 +1761,17 @@ function New-TrueNasUser {
         [string]$Shell
     )
 
-    # Variables
+    
     $ApiSubPath = "/user"
     
-    # Création de l'objet
+    
     $newObject = @{
         username = $Credential.UserName;
         group_create = $true;
         full_name = $FullName;
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if(![string]::IsNullOrEmpty($SSHPubKey)){
             $newObject.Add("sshpubkey", $SSHPubKey)
         }
@@ -1784,7 +1809,7 @@ function New-TrueNasUser {
 
     $body = $newObject | ConvertTo-Json
     
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1825,14 +1850,14 @@ function Set-TrueNasUser {
         [string]$Shell
     )
     
-    # Variables
+    
     $ApiSubPath = "/user/id/$Id"
     
-    # Création de l'objet
+    
     $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if(![string]::IsNullOrEmpty($UserName)){
             $newObject.Add("username", $Username)
         }
@@ -1873,7 +1898,7 @@ function Set-TrueNasUser {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Put -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1892,14 +1917,14 @@ function Remove-TrueNasUser {
         [switch]$KeepPrimaryGroup
     )
     
-    # Variables
+    
     $ApiSubPath = "/user/id/$Id"
     
-    # Création de l'objet
+    
     $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($KeepPrimaryGroup.IsPresent){
             $newObject.Add("delete_group", $false)
         }else {
@@ -1910,7 +1935,7 @@ function Remove-TrueNasUser {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Delete -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -1929,20 +1954,20 @@ function Get-TrueNasGroup {
         [switch]$IncludeDSCache
     )
     
-    # Variables
+    
     $ApiSubPath = "/group"
 
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
-    # Création de l'objet
+    
     $newObject = @{
         "query-filters" = @();
         "query-options" = @{};
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($IncludeDSCache.IsPresent){
             $newObject.'query-options'.Add( "extra", @{"search_dscache" = $true} )
         }
@@ -1951,7 +1976,7 @@ function Get-TrueNasGroup {
     $body = $newObject | ConvertTo-Json
 
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
 
@@ -1972,15 +1997,15 @@ function New-TrueNasGroup {
         [switch]$PermitSudo
     )
     
-    # Variables
+    
     $ApiSubPath = "/group"
     
-    # Création de l'objet
+    
     $newObject = @{
         name = $GroupName;
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($SambaGroup.IsPresent){
             $newObject.Add("smb", $true)
         }else {
@@ -1994,7 +2019,7 @@ function New-TrueNasGroup {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -2017,14 +2042,14 @@ function Set-TrueNasGroup {
         [switch]$PermitSudo
     )
     
-    # Variables
+    
     $ApiSubPath = "/group/id/$Id"
     
-    # Création de l'objet
+    
     $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if(![string]::IsNullOrEmpty($GroupName)){
             $newObject.Add("name", $GroupName)
         }
@@ -2041,7 +2066,7 @@ function Set-TrueNasGroup {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Put -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -2060,14 +2085,14 @@ function Remove-TrueNasGroup {
         [switch]$RemoveUsersIfPrimaryGroup
     )
     
-    # Variables
+    
     $ApiSubPath = "/group/id/$Id"
     
-    # Création de l'objet
+    
     $newObject = @{
     }
 
-    #region Ajout des paramètres supplémentaires
+    #region Adding additional parameters
         if($RemoveUsersIfPrimaryGroup.IsPresent){
             $newObject.Add("delete_users", $true)
         }else {
@@ -2078,7 +2103,7 @@ function Remove-TrueNasGroup {
     $body = $newObject | ConvertTo-Json
     
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Delete -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -2093,10 +2118,10 @@ function Get-TrueNasActiveDirectoryConfig {
         [TrueNasSession]$TrueNasSession
     )
     
-    # Variables
+    
     $ApiSubPath = "/activedirectory"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -2111,10 +2136,10 @@ function Get-TrueNasActiveDirectoryDomainInfo {
         [TrueNasSession]$TrueNasSession
     )
     
-    # Variables
+    
     $ApiSubPath = "/activedirectory/domain_info"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -2129,10 +2154,10 @@ function Get-TrueNasActiveDirectoryServiceState {
         [TrueNasSession]$TrueNasSession
     )
     
-    # Variables
+    
     $ApiSubPath = "/activedirectory/get_state"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
@@ -2147,10 +2172,10 @@ function Test-TrueNasActiveDirectory {
         [TrueNasSession]$TrueNasSession
     )
     
-    # Variables
+    
     $ApiSubPath = "/activedirectory/started"
 
-    # Lancement de la requête
+    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
