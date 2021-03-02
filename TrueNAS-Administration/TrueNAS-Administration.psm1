@@ -62,9 +62,9 @@ function Get-TrueNasSession {
         # Some specifications depending on Powershell version
         switch ($PSVersionTable.PSVersion.Major) {
             {$_ -le 5} {
+                $params.Remove("SkipCertificateCheck")
                 if ($SkipCertificateCheck.IsPresent) {
                     [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-                    $params.Remove("SkipCertificateCheck")
                 }
                 break
             }
@@ -122,6 +122,7 @@ function Invoke-RestMethodOnFreeNAS {
     # Some specifications depending on Powershell version
     switch ($PSVersionTable.PSVersion.Major) {
         {$_ -le 5} {
+            $params.Remove("SkipCertificateCheck")
             if ($Method -eq "Get" -and ![string]::IsNullOrEmpty($Body)) {
                 $params.Remove("Body")
                 Write-Warning -Message "Body parameters for GET are not supported on your version of Powershell. Powershell 7.1 minimum required."
@@ -129,7 +130,6 @@ function Invoke-RestMethodOnFreeNAS {
 
             if ($TrueNasSession.SkipCertificateCheck) {
                 [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-                $params.Remove("SkipCertificateCheck")
             }
 
             break
