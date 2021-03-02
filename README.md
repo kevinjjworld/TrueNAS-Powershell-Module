@@ -5,7 +5,7 @@ With this module, you can manage your TrueNAS server from a computer with Powers
 * This module only works with [TrueNAS API Key](https://www.truenas.com/docs/hub/additional-topics/api/#creating-api-keys).
 
 ## Requirements
-* **Powershell 7.1** Minimum
+* **Powershell 7.1 Minimum** (for a better experience) but works on Powershell 5.1 Minimum
 * TrueNAS RESTful API 2.0
 
 ### How to install Powershell 7 ?
@@ -15,7 +15,7 @@ With this module, you can manage your TrueNAS server from a computer with Powers
 
 
 ## Import the module in Powershell
-#### 1. Run Powershell 7
+#### 1. Run Powershell
 
 #### 2. Clone the repository or download the project :
 ```bash
