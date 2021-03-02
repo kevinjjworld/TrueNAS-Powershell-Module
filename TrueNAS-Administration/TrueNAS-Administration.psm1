@@ -1,23 +1,14 @@
-using namespace System.Net
-using namespace System.Security.Cryptography.X509Certificates
-
-class TrustAllCertsPolicy : ICertificatePolicy {
-    [bool]CheckValidationResult([ServicePoint]$srvPoint, [X509Certificate]$certificate, [WebRequest]$request, [int]$certificateProblem) {
-        return $true;
-    }
-}
-
 class TrueNasSession {
     # Properties
     [String] $Server
     [int] $Port
-    [System.Object] $WebSession
+    [Microsoft.PowerShell.Commands.WebRequestSession] $WebSession
     [bool] $SkipCertificateCheck
     [String] $ApiName
     [String] $Version
 
     # Constructor
-    TrueNasSession ([String] $Server, [int] $Port, [System.Object] $WebSession, [bool] $SkipCertificateCheck, [String] $ApiName, [string] $Version) {
+    TrueNasSession ([String] $Server, [int] $Port, [Microsoft.PowerShell.Commands.WebRequestSession] $WebSession, [bool] $SkipCertificateCheck, [String] $ApiName, [string] $Version) {
         $this.Server = $Server
         $this.Port = $Port
         $this.WebSession = $WebSession
@@ -2089,48 +2080,6 @@ function Remove-TrueNasGroup {
 
     # Lancement de la requête
     $result = Invoke-RestMethodOnFreeNAS -Method Delete -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
-
-    return $result
-}
-
-function Get-TrueNasGroup {
-    
-    [CmdletBinding()]
-    Param
-    (
-        [Parameter(Mandatory = $true)]
-        [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $false)]
-        [int]$Id,
-        [Parameter(Mandatory = $false)]
-        [switch]$IncludeDSCache
-    )
-    
-    # Variables
-    $ApiSubPath = "/group"
-
-    if ($Id) {
-        $ApiSubPath += "/id/" + $Id
-    }
-
-    # Création de l'objet
-    $newObject = @{
-        "query-filters" = @();
-        "query-options" = @{};
-    }
-
-    #region Ajout des paramètres supplémentaires
-        if($IncludeDSCache.IsPresent){
-            $newObject.'query-options'.Add( "extra", @{"search_dscache" = $true} )
-        }
-    #endregion
-
-    $body = $newObject | ConvertTo-Json
-
-
-    # Lancement de la requête
-    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
-    
 
     return $result
 }
