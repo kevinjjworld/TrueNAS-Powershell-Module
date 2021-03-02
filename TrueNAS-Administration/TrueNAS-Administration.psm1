@@ -124,7 +124,7 @@ function Invoke-RestMethodOnFreeNAS {
         {$_ -le 5} {
             if ($Method -eq "Get" -and ![string]::IsNullOrEmpty($Body)) {
                 $params.Remove("Body")
-                Write-Warning -Message "Body parameters for GET are not supported on your version of Powershell. Powershell Core 6 minimum required."
+                Write-Warning -Message "Body parameters for GET are not supported on your version of Powershell. Powershell 7.1 minimum required."
             }
 
             if ($TrueNasSession.SkipCertificateCheck) {
