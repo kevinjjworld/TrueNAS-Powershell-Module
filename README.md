@@ -14,7 +14,7 @@ With this module, you can manage your TrueNAS server from a computer with Powers
 * [Installing Powershell 7 on Ubuntu 20.04](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7.1#ubuntu-2004)
 
 
-## Import the module in Powershell
+## Download and Import the module - Example 1 - (Non-persistent)
 #### 1. Run Powershell
 
 #### 2. Clone the repository or download the project :
@@ -26,6 +26,35 @@ git clone https://github.com/kevinjjworld/TrueNAS-Powershell-Module.git
 ```Powershell
 Import-Module -Name ".\TrueNAS-Powershell-Module\TrueNAS-Administration" -Force
 ```
+
+#### 4. List all module's Cmdlets :
+```Powershell
+Get-Command -Module "TrueNAS-Administration"
+```
+
+## Download and Import the module - Example 2 - (Persistent)
+#### 1. Run Powershell
+
+#### 2. Install dependencies and TrueNAS-Administration Module from PSGallery :
+```Powershell
+Start-Process PowerShell `
+	-ArgumentList "-Command & { `
+		Install-PackageProvider -Name NuGet -Force; `
+		Install-Module -Name PowerShellGet -Force; `
+		Update-Module -Name PowerShellGet; `
+		Install-Module -Name TrueNAS-Administration -Force; `
+		pause; `
+	}" `
+	-Verb RunAs
+```
+You will be prompted to run the command **As admin**.
+
+#### 3. Import the Module in Powershell :
+```Powershell
+Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process -Force;
+Import-Module -Name "TrueNAS-Administration" -Force
+```
+Use `-Scope CurrentUser` to persist ExecutionPolicy for CurrentUser.
 
 #### 4. List all module's Cmdlets :
 ```Powershell

@@ -2,13 +2,13 @@ class TrueNasSession {
     # Properties
     [String] $Server
     [int] $Port
-    [Microsoft.PowerShell.Commands.WebRequestSession] $WebSession
+    [System.Object] $WebSession
     [bool] $SkipCertificateCheck
     [String] $ApiName
     [String] $Version
 
     # Constructor
-    TrueNasSession ([String] $Server, [int] $Port, [Microsoft.PowerShell.Commands.WebRequestSession] $WebSession, [bool] $SkipCertificateCheck, [String] $ApiName, [string] $Version) {
+    TrueNasSession ([String] $Server, [int] $Port, [System.Object] $WebSession, [bool] $SkipCertificateCheck, [String] $ApiName, [string] $Version) {
         $this.Server = $Server
         $this.Port = $Port
         $this.WebSession = $WebSession
