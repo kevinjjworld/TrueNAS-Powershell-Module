@@ -905,7 +905,7 @@ function Remove-TrueNasDataset {
     return $result
 }
 
-New-Alias -Name Remove-TrueNasZvol -Value Remove-TrueNasDataset
+New-Alias -Name Remove-TrueNasZvol -Value Remove-TrueNasDataset -Force
 
 
 function Get-TrueNasDatasetAttachment {
@@ -1370,7 +1370,7 @@ function Get-TrueNasUpdateAvailable {
     return $result
 }
 
-New-Alias -Name Get-TrueNasUpdateStatus -Value Get-TrueNasUpdateAvailable
+New-Alias -Name Get-TrueNasUpdateStatus -Value Get-TrueNasUpdateAvailable -Force
 
 function Update-TrueNas {
     
