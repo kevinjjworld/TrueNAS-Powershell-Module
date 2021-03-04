@@ -42,9 +42,7 @@ You will be prompted to run the command **As admin**.
 ```Powershell
 Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process -Force
 ```
-Use `-Scope CurrentUser` to persist ExecutionPolicy for Current User.
-
-Use `-Scope LocalMachine` to persist ExecutionPolicy for All Users **_(Not recommended)_**.
+Use `-Scope CurrentUser` to persist ExecutionPolicy for Current User or `-Scope LocalMachine` to persist ExecutionPolicy for All Users **_(Not recommended)_**.
 
 #### 2. Import the module :
 ```Powershell
