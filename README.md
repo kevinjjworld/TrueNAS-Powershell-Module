@@ -39,11 +39,14 @@ You will be prompted to run the command **As admin**.
 
 
 ## Import the Module in Powershell
-#### 1. Set Execution Policy :
+#### 1. Set Execution Policy to authorize the import of the module (Only for the current Powershell session) :
 ```Powershell
 Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process -Force
 ```
-Use `-Scope CurrentUser` to persist ExecutionPolicy for Current User or `-Scope LocalMachine` to persist ExecutionPolicy for All Users **_(Not recommended)_**.
+**-Scope parameter** :  
+* `CurrentUser` to persist ExecutionPolicy for Current User.  
+* `LocalMachine` to persist ExecutionPolicy for All Users **_(Not recommended)_**.
+
 
 #### 2. Import the module :
 ```Powershell
