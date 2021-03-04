@@ -16,13 +16,13 @@ With this module, you can manage your TrueNAS server from a computer with Powers
 
 
 ## Install the module from PSGallery
-### Example 1 - For Current User :
+#### Example 1 - For Current User :
 ```Powershell
 Install-PackageProvider -Name NuGet -Scope CurrentUser -Force
 Install-Module -Name "TrueNAS-Administration" -Scope CurrentUser -Force
 ```
 
-### Example 2 - For All Users :
+#### Example 2 - For All Users :
 ```Powershell
 Start-Process PowerShell `
 	-ArgumentList "-Command & { `
