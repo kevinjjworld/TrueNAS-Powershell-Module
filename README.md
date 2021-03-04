@@ -24,7 +24,7 @@ Install-Module -Name "TrueNAS-Administration" -Scope CurrentUser -Force
 
 #### Example 2 - For All Users :
 ```Powershell
-Start-Process PowerShell `
+Start-Process PowerShell -Wait `
 	-ArgumentList "-Command & { `
 		Install-PackageProvider -Name NuGet -Force; `
 		Install-Module -Name PowerShellGet -Force; `
