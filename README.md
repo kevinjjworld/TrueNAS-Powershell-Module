@@ -1,5 +1,6 @@
 # TrueNAS-Administration
 This is a Powershell Module that provides command-lines and automation for the TrueNAS API.
+
 With this module, you can manage your TrueNAS server from a computer with Powershell (Windows or Linux).
 * This module only works over HTTPS.
 * This module only works with [TrueNAS API Key](https://www.truenas.com/docs/hub/additional-topics/api/#creating-api-keys).
@@ -14,28 +15,14 @@ With this module, you can manage your TrueNAS server from a computer with Powers
 * [Installing Powershell 7 on Ubuntu 20.04](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7.1#ubuntu-2004)
 
 
-## Download and Import the module - Example 1 - (Non-persistent)
-#### 1. Run Powershell
-
-#### 2. Clone the repository or download the project :
-```bash
-git clone https://github.com/kevinjjworld/TrueNAS-Powershell-Module.git
-
-```
-#### 3. Import the Module in Powershell :
+## Install the module from PSGallery
+### Example 1 - For Current User :
 ```Powershell
-Import-Module -Name ".\TrueNAS-Powershell-Module\TrueNAS-Administration" -Force
+Install-PackageProvider -Name NuGet -Scope CurrentUser -Force
+Install-Module -Name "TrueNAS-Administration" -Scope CurrentUser -Force
 ```
 
-#### 4. List all module's Cmdlets :
-```Powershell
-Get-Command -Module "TrueNAS-Administration"
-```
-
-## Download and Import the module - Example 2 - (Persistent)
-#### 1. Run Powershell
-
-#### 2. Install dependencies and TrueNAS-Administration Module from PSGallery :
+### Example 2 - For All Users :
 ```Powershell
 Start-Process PowerShell `
 	-ArgumentList "-Command & { `
@@ -49,17 +36,38 @@ Start-Process PowerShell `
 ```
 You will be prompted to run the command **As admin**.
 
-#### 3. Import the Module in Powershell :
+
+## Import the Module in Powershell
+#### 1. Set Execution Policy :
 ```Powershell
-Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process -Force;
+Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process -Force
+```
+Use `-Scope CurrentUser` to persist ExecutionPolicy for Current User.
+
+Use `-Scope LocalMachine` to persist ExecutionPolicy for All Users **_(Not recommended)_**.
+
+#### 2. Import the module :
+```Powershell
 Import-Module -Name "TrueNAS-Administration" -Force
 ```
-Use `-Scope CurrentUser` to persist ExecutionPolicy for CurrentUser.
 
-#### 4. List all module's Cmdlets :
+#### 3. List all module's Cmdlets :
 ```Powershell
 Get-Command -Module "TrueNAS-Administration"
 ```
+
+
+## Update the Module 
+#### 1. Check the latest available version of the module :
+```Powershell
+Find-Module -Name "TrueNAS-Administration"
+```
+
+#### 2. Update the module
+```Powershell
+Update-Module -Name "TrueNAS-Administration" -Force
+```
+
 
 ## Usage
 #### 1. Get a session and store it in a variable
