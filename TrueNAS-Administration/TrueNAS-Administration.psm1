@@ -998,7 +998,7 @@ function Get-TrueNasChildItem {
         [string]$OrderBy,
         [Parameter(Mandatory = $false)]
         [ValidateSet("name", "path", "realpath", "type", "size", "mode", "acl", "uid", "gid")]
-        [string]$Select
+        [string[]]$Select
     )
 
     
