@@ -865,6 +865,49 @@ function Get-TrueNasDatasetProcess {
     return $result
 }
 
+function Get-TrueNasSnapshot {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("id", "name", "pool", "type", "properties", "holds", "dataset", "snapshot_name", "mountpoint")]
+        [string]$OrderBy,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("id", "name", "pool", "type", "properties", "holds", "dataset", "snapshot_name", "mountpoint")]
+        [string[]]$Select
+    )
+
+    
+    $ApiSubPath = "/zfs/snapshot"
+    if ($Id) {
+        $ApiSubPath += "/id/" + $Id
+    }
+    
+    $newObject = @{
+        "query-filters" = @();
+        "query-options" = @{};
+    }
+
+    #region Adding additional parameters
+        if(![string]::IsNullOrEmpty($OrderBy)){
+            $newObject.'query-options'.Add( "order_by", @($OrderBy.ToLower()) )
+        }
+        if(![string]::IsNullOrEmpty($Select)){
+            $newObject.'query-options'.Add( "select", @($Select.ToLower()) )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasChildItem {
     
     [CmdletBinding()]
