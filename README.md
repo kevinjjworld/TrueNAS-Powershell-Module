@@ -1,7 +1,7 @@
 # TrueNAS-Administration
 This is a Powershell Module that provides command-lines and automation for the TrueNAS API.
 
-With this module, you can manage your TrueNAS server from a computer with Powershell (Windows or Linux).
+With this module, you can manage your TrueNAS server from a computer with Powershell (Windows and Linux).
 * This module only works over HTTPS.
 * This module only works with [TrueNAS API Key](https://www.truenas.com/docs/hub/additional-topics/api/#creating-api-keys).
 
