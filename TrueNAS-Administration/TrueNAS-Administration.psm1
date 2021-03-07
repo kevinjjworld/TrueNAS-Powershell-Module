@@ -567,6 +567,8 @@ function Get-TrueNasDataset {
     return $result
 }
 
+New-Alias -Name Get-TrueNasZvol -Value Get-TrueNasDataset -Force
+
 function New-TrueNasDataset {
     
     [CmdletBinding()]
@@ -675,97 +677,6 @@ function Set-TrueNasDataset {
     $result = Invoke-RestMethodOnFreeNAS -Method Put -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
-}
-
-function Get-TrueNasChildItem {
-    
-    [CmdletBinding()]
-    Param
-    (
-        [Parameter(Mandatory = $true)]
-        [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [string]$Path,
-        [Parameter(Mandatory = $false)]
-        [ValidateSet("name", "path", "realpath", "type", "size", "mode", "acl", "uid", "gid")]
-        [string]$OrderBy,
-        [Parameter(Mandatory = $false)]
-        [ValidateSet("name", "path", "realpath", "type", "size", "mode", "acl", "uid", "gid")]
-        [string]$Select
-    )
-
-    
-    $ApiSubPath = "/filesystem/listdir"
-
-    
-    $newObject = @{
-        path = $Path;
-        "query-filters" = @();
-        "query-options" = @{};
-    }
-
-    #region Adding additional parameters
-        if(![string]::IsNullOrEmpty($OrderBy)){
-            $newObject.'query-options'.Add( "order_by", @($OrderBy.ToLower()) )
-        }
-        if(![string]::IsNullOrEmpty($Select)){
-            $newObject.'query-options'.Add( "select", @($Select.ToLower()) )
-        }
-    #endregion
-
-    $body = $newObject | ConvertTo-Json
-
-    
-    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
-
-    return $result
-}
-
-function Get-TrueNasPathAcl {
-    
-    [CmdletBinding()]
-    Param
-    (
-        [Parameter(Mandatory = $true)]
-        [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [string]$Path,
-        [Parameter(Mandatory = $false)]
-        [switch]$Simplified
-    )
-
-    
-    $ApiSubPath = "/filesystem/getacl"
-
-    
-    $newObject = @{
-        path = $Path
-    }
-
-    #region Adding additional parameters
-        if($Simplified.IsPresent){
-            $newObject.Add( "simplified", $true )
-        }
-    #endregion
-
-    $body = $newObject | ConvertTo-Json
-
-    
-    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
-
-    return $result
-}
-
-function Set-TrueNasPathAcl {
-    # TODO
-}
-
-function Set-TrueNasPathPerm {
-    # TODO UNIX Permissions
-}
-
-function Set-TrueNasPathOwner {
-    # TODO
 }
 
 function New-TrueNasZvol {
@@ -952,6 +863,97 @@ function Get-TrueNasDatasetProcess {
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
+}
+
+function Get-TrueNasChildItem {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("name", "path", "realpath", "type", "size", "mode", "acl", "uid", "gid")]
+        [string]$OrderBy,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("name", "path", "realpath", "type", "size", "mode", "acl", "uid", "gid")]
+        [string]$Select
+    )
+
+    
+    $ApiSubPath = "/filesystem/listdir"
+
+    
+    $newObject = @{
+        path = $Path;
+        "query-filters" = @();
+        "query-options" = @{};
+    }
+
+    #region Adding additional parameters
+        if(![string]::IsNullOrEmpty($OrderBy)){
+            $newObject.'query-options'.Add( "order_by", @($OrderBy.ToLower()) )
+        }
+        if(![string]::IsNullOrEmpty($Select)){
+            $newObject.'query-options'.Add( "select", @($Select.ToLower()) )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Get-TrueNasPathAcl {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $false)]
+        [switch]$Simplified
+    )
+
+    
+    $ApiSubPath = "/filesystem/getacl"
+
+    
+    $newObject = @{
+        path = $Path
+    }
+
+    #region Adding additional parameters
+        if($Simplified.IsPresent){
+            $newObject.Add( "simplified", $true )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Set-TrueNasPathAcl {
+    # TODO
+}
+
+function Set-TrueNasPathPerm {
+    # TODO UNIX Permissions
+}
+
+function Set-TrueNasPathOwner {
+    # TODO
 }
 
 function Get-TrueNasService {
