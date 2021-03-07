@@ -937,7 +937,7 @@ function New-TrueNasSnapshot {
         if ($AddDateToSnapshotName.IsPresent) {
             $newObject.Remove("name")
             $newObject.Add("naming_schema", $($Name + "-%Y-%m-%d_%H-%M"))
-        } 
+        }
         if ($Recurse.IsPresent) {
             $newObject.Add("recursive", $true)
         } 
@@ -947,6 +947,39 @@ function New-TrueNasSnapshot {
 
     
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Remove-TrueNasSnapshot {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$Defer
+    )
+
+    $Id = $Id -replace("/","%2F")
+    $ApiSubPath = "/zfs/snapshot/id/$Id"
+    
+    $newObject = @{
+    }
+
+    #region Adding additional parameters
+        if ($Defer.IsPresent) {
+            $newObject.Add("defer", $true)
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Delete -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
