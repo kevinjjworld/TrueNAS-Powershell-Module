@@ -908,6 +908,49 @@ function Get-TrueNasSnapshot {
     return $result
 }
 
+function New-TrueNasSnapshot {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Dataset,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [switch]$AddDateToSnapshotName,
+        [Parameter(Mandatory = $false)]
+        [switch]$Recurse
+    )
+
+    
+    $ApiSubPath = "/zfs/snapshot"
+    
+    $newObject = @{
+        "dataset" = $Dataset;
+        "name" = $Name;
+    }
+
+    #region Adding additional parameters
+        if ($AddDateToSnapshotName.IsPresent) {
+            $newObject.Remove("name")
+            $newObject.Add("naming_schema", $($Name + "-%Y-%m-%d_%H-%M"))
+        } 
+        if ($Recurse.IsPresent) {
+            $newObject.Add("recursive", $true)
+        } 
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasChildItem {
     
     [CmdletBinding()]
