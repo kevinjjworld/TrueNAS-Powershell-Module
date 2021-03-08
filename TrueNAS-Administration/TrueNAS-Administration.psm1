@@ -872,6 +872,8 @@ function Get-TrueNasSnapshot {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Id,
         [Parameter(Mandatory = $false)]
         [ValidateSet("id", "name", "pool", "type", "properties", "holds", "dataset", "snapshot_name", "mountpoint")]
         [string]$OrderBy,
@@ -880,7 +882,7 @@ function Get-TrueNasSnapshot {
         [string[]]$Select
     )
 
-    
+    $Id = $Id -replace("/","%2F")
     $ApiSubPath = "/zfs/snapshot"
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
@@ -983,6 +985,90 @@ function Remove-TrueNasSnapshot {
 
     return $result
 }
+
+function New-TrueNasSnapshotClone {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Snapshot,
+        [Parameter(Mandatory = $false)]
+        [string]$Destination
+    )
+
+    $DatasetDestination = $DatasetDestination -replace("/","%2F")
+    $ApiSubPath = "/zfs/snapshot/clone"
+    
+    $newObject = @{
+        snapshot = $Snapshot;
+        dataset_dst = $Destination;
+    }
+
+    #region Adding additional parameters
+
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Invoke-TrueNasSnapshotRollback {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Id,
+        [Parameter(Mandatory = $false)]
+        [switch]$RemoveNewerSnapshots,
+        [Parameter(Mandatory = $false)]
+        [switch]$RemoveNewerSnapshotsAndClones,
+        [Parameter(Mandatory = $false)]
+        [switch]$Force
+    )
+
+    if ($RemoveNewerSnapshots.IsPresent -and $RemoveNewerSnapshotsAndClones.IsPresent) {
+        throw "-RemoveNewerSnapshots and -RemoveNewerSnapshotsAndClones cannot be used in the same command line."
+    }
+
+    #$Id = $Id -replace("/","%2F")
+    $ApiSubPath = "/zfs/snapshot/rollback"
+    
+    $newObject = @{
+        id = $Id;
+        options = @{};
+    }
+
+    #region Adding additional parameters
+        if($RemoveNewerSnapshots.IsPresent) {
+            $newObject.options.Add("recursive", $true)
+        }
+        if($RemoveNewerSnapshotsAndClones.IsPresent) {
+            $newObject.options.Add("recursive_clones", $true)
+        }
+        if($Force.IsPresent) {
+            $newObject.options.Add("force", $true)
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+New-Alias -Name Restore-TrueNasSnapshot -Value Invoke-TrueNasSnapshotRollback -Force
 
 function Get-TrueNasChildItem {
     
@@ -1115,7 +1201,7 @@ function Set-TrueNasService {
     )
 
     if($EnableAtStartup.IsPresent -and $DisableAtStartup.IsPresent){
-        throw "-EnableAtStartup et -DisableAtStartup ne peuvent pas être utilisés dans la même commande."
+        throw "-EnableAtStartup and -DisableAtStartup cannot be used in the same command line."
     }
 
     
