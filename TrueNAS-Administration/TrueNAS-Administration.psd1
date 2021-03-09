@@ -107,7 +107,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = 'Powershell Module for TrueNAS'
 
         # Prerelease string of this module
         # Prerelease = ''
