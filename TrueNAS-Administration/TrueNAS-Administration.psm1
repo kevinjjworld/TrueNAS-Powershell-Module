@@ -999,7 +999,7 @@ function New-TrueNasSnapshotClone {
         [string]$Destination
     )
 
-    $DatasetDestination = $DatasetDestination -replace("/","%2F")
+    # $Destination = $Destination -replace("/","%2F") # Destination is not in the URI, so this line is useless
     $ApiSubPath = "/zfs/snapshot/clone"
     
     $newObject = @{
@@ -1040,7 +1040,7 @@ function Invoke-TrueNasSnapshotRollback {
         throw "-RemoveNewerSnapshots and -RemoveNewerSnapshotsAndClones cannot be used in the same command line."
     }
 
-    #$Id = $Id -replace("/","%2F")
+    #$Id = $Id -replace("/","%2F") # Id is not in the URI, so this line is useless
     $ApiSubPath = "/zfs/snapshot/rollback"
     
     $newObject = @{
