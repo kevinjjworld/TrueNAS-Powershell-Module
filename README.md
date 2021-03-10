@@ -18,34 +18,23 @@ With this module, you can manage your TrueNAS server from a computer with Powers
 ## Install the module from PSGallery
 #### Example 1 - For Current User :
 ```Powershell
-Install-PackageProvider -Name NuGet -Scope CurrentUser -Force
 Install-Module -Name "TrueNAS-Administration" -Scope CurrentUser -Force
 ```
 
 #### Example 2 - For All Users :
 ```Powershell
-Start-Process PowerShell -Wait `
-	-ArgumentList "-Command & { `
-		Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process -Force; `
-		Install-PackageProvider -Name NuGet -Force; `
-		Install-Module -Name PowerShellGet -Force; `
-		Update-Module -Name PowerShellGet; `
-		Install-Module -Name TrueNAS-Administration -Force; `
-		pause; `
-	}" `
-	-Verb RunAs
+Install-Module -Name "TrueNAS-Administration" -Scope AllUsers -Force
 ```
-You will be prompted to run the command **As admin**.
+Need admin rights.
 
 
 ## Import the Module in Powershell
 #### 1. Set Execution Policy to authorize the import of the module (Only for the current Powershell session) :
 ```Powershell
-Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process -Force
-```
-**-Scope parameter** :  
-* `CurrentUser` to persist ExecutionPolicy for Current User.  
-* `LocalMachine` to persist ExecutionPolicy for All Users **_(Not recommended)_**.
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
+``` 
+* Use `-Scope CurrentUser` to persist ExecutionPolicy for Current User.  
+* Use `-Scope LocalMachine` to persist ExecutionPolicy for All Users.
 
 
 #### 2. Import the module :
