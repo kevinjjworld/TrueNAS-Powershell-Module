@@ -29,7 +29,7 @@ Need admin rights.
 
 
 ## Import the Module in Powershell
-#### 1. Set Execution Policy to authorize the import of the module (Only for the current Powershell session) :
+#### 1. Set Execution Policy _(Only for Powershell 5.1)_ :
 ```Powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
 ``` 
