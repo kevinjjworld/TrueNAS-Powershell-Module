@@ -25,7 +25,7 @@ Install-Module -Name "TrueNAS-Administration" -Scope CurrentUser -Force
 ```Powershell
 Install-Module -Name "TrueNAS-Administration" -Scope AllUsers -Force
 ```
-Need admin rights.
+`-Scope AllUsers` need admin rights.
 
 
 ## Import the Module in Powershell
