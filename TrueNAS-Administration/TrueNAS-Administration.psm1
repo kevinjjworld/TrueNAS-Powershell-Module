@@ -1729,19 +1729,31 @@ function Get-TrueNasVM {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [string]$Name
     )
     
-    
+    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+        throw "-Id and -Name cannot be used in the same command line."
+    }
+
     $ApiSubPath = "/vm"
 
     if ($Id) {
         $ApiSubPath += "/id/" + $Id
     }
 
-    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
-    
+
+    if(![string]::IsNullOrEmpty($Name)) {
+        $result =  $result | Where-Object { $_.Name -eq $Name }
+
+        if($null -eq $result) {
+            throw "VM $Name was not found."
+        }
+    }
+
     return $result
 }
 
