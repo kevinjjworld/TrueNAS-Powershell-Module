@@ -1747,7 +1747,7 @@ function Get-TrueNasVM {
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     if(![string]::IsNullOrEmpty($Name)) {
-        $result =  $result | Where-Object { $_.Name -eq $Name }
+        $result =  $result | Where-Object { $_.Name -like $Name }
 
         if($null -eq $result) {
             throw "VM $Name was not found."
@@ -1977,15 +1977,6 @@ function Get-TrueNasUser {
     if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
         throw "-Id and -Name cannot be used in the same command line."
     }
-    
-    # Get VM Id
-    if(![string]::IsNullOrEmpty($Name)) {
-        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession -Name $Name).Id
-
-        if(($null -eq $Id) -and ($Id -eq 0)) {
-            throw "VM $Name was not found."
-        }
-    }
 
     $ApiSubPath = "/user"
 
@@ -2006,11 +1997,18 @@ function Get-TrueNasUser {
     #endregion
 
     $body = $newObject | ConvertTo-Json
-
-
     
+
     $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
+    if(![string]::IsNullOrEmpty($Name)) {
+        $result =  $result | Where-Object { $_.username -like $Name }
+
+        if($null -eq $result) {
+            throw "User $Name was not found."
+        }
+    }
+
     return $result
 }
 function New-TrueNasUser {
@@ -2234,9 +2232,14 @@ function Get-TrueNasGroup {
         [Parameter(Mandatory = $false)]
         [int]$Id,
         [Parameter(Mandatory = $false)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
         [switch]$IncludeDSCache
     )
     
+    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+        throw "-Id and -Name cannot be used in the same command line."
+    }
     
     $ApiSubPath = "/group"
 
@@ -2259,9 +2262,16 @@ function Get-TrueNasGroup {
     $body = $newObject | ConvertTo-Json
 
 
-    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
+
+    if(![string]::IsNullOrEmpty($Name)) {
+        $result =  $result | Where-Object { $_.group -like $Name }
+
+        if($null -eq $result) {
+            throw "User $Name was not found."
+        }
+    }
 
     return $result
 }
