@@ -1771,13 +1771,27 @@ function Start-TrueNasVM {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$Force
     )
     
+    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+        throw "-Id and -Name cannot be used in the same command line."
+    }
     
+    # Get VM Id
+    if(![string]::IsNullOrEmpty($Name)) {
+        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession -Name $Name).Id
+
+        if(($null -eq $Id) -and ($Id -eq 0)) {
+            throw "VM $Name was not found."
+        }
+    }
+
     $ApiSubPath = "/vm/id/$id/start"
 
     
@@ -1805,13 +1819,27 @@ function Stop-TrueNasVM {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$Force
     )
     
+    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+        throw "-Id and -Name cannot be used in the same command line."
+    }
     
+    # Get VM Id
+    if(![string]::IsNullOrEmpty($Name)) {
+        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession -Name $Name).Id
+
+        if(($null -eq $Id) -and ($Id -eq 0)) {
+            throw "VM $Name was not found."
+        }
+    }
+
     $ApiSubPath = "/vm/id/$id/stop"
 
     
@@ -1840,11 +1868,25 @@ function Restart-TrueNasVM {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [int]$Id
+        [Parameter(Mandatory = $false)]
+        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [string]$Name
     )
     
+    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+        throw "-Id and -Name cannot be used in the same command line."
+    }
     
+    # Get VM Id
+    if(![string]::IsNullOrEmpty($Name)) {
+        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession -Name $Name).Id
+
+        if(($null -eq $Id) -and ($Id -eq 0)) {
+            throw "VM $Name was not found."
+        }
+    }
+
     $ApiSubPath = "/vm/id/$id/restart"
     
     
