@@ -419,7 +419,7 @@ function Get-TrueNasDisk {
     
     $ApiSubPath = "/disk"
 
-    if ($Id) {
+    if ($Id -gt 0) {
         $ApiSubPath += "/id/" + $Id
     }
     
@@ -470,7 +470,7 @@ function Get-TrueNasPool {
     
     $ApiSubPath = "/pool"
 
-    if ($Id) {
+    if ($Id -gt 0) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -557,7 +557,7 @@ function Get-TrueNasDataset {
     
     $ApiSubPath = "/pool/dataset"
 
-    if ($Id) {
+    if (![string]::IsNullOrEmpty($Id)) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -884,7 +884,7 @@ function Get-TrueNasSnapshot {
 
     $Id = $Id -replace("/","%2F")
     $ApiSubPath = "/zfs/snapshot"
-    if ($Id) {
+    if (![string]::IsNullOrEmpty($Id)) {
         $ApiSubPath += "/id/" + $Id
     }
     
@@ -1175,7 +1175,7 @@ function Get-TrueNasService {
     
     $ApiSubPath = "/service"
 
-    if ($Id) {
+    if ($Id -gt 0) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -1392,7 +1392,7 @@ function Get-TrueNasSharing {
     $Type = $Type.ToLower()
     $ApiSubPath = "/sharing/$Type"
 
-    if ($Id) {
+    if ($Id -gt 0) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -1740,7 +1740,7 @@ function Get-TrueNasVM {
 
     $ApiSubPath = "/vm"
 
-    if ($Id) {
+    if ($Id -gt 0) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -1947,7 +1947,7 @@ function Get-TrueNasVMDevices {
     
     $ApiSubPath = "/vm/device"
 
-    if ($Id) {
+    if ($Id -gt 0) {
         $ApiSubPath += "/id/" + $Id
     }
     
@@ -1968,13 +1968,28 @@ function Get-TrueNasUser {
         [Parameter(Mandatory = $false)]
         [int]$Id,
         [Parameter(Mandatory = $false)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
         [switch]$IncludeDSCache
     )
     
+
+    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+        throw "-Id and -Name cannot be used in the same command line."
+    }
     
+    # Get VM Id
+    if(![string]::IsNullOrEmpty($Name)) {
+        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession -Name $Name).Id
+
+        if(($null -eq $Id) -and ($Id -eq 0)) {
+            throw "VM $Name was not found."
+        }
+    }
+
     $ApiSubPath = "/user"
 
-    if ($Id) {
+    if ($Id -gt 0) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -2225,7 +2240,7 @@ function Get-TrueNasGroup {
     
     $ApiSubPath = "/group"
 
-    if ($Id) {
+    if ($Id -gt 0) {
         $ApiSubPath += "/id/" + $Id
     }
 
