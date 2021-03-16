@@ -1754,6 +1754,13 @@ function Get-TrueNasVM {
         }
     }
 
+    # Add properties state, pid and domain_state to parent objet for more readability
+    foreach ($curItem in $result) {
+        $curItem | Add-Member -MemberType NoteProperty -Name state -Value $curItem.status.state
+        $curItem | Add-Member -MemberType NoteProperty -Name pid -Value $curItem.status.pid
+        $curItem | Add-Member -MemberType NoteProperty -Name domain_state -Value $curItem.status.domain_state
+    }
+    
     return $result
 }
 
