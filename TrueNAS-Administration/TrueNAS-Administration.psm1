@@ -1731,7 +1731,9 @@ function Get-TrueNasVM {
         [Parameter(Mandatory = $false)]
         [int]$Id,
         [Parameter(Mandatory = $false)]
-        [string]$Name
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [switch]$CaseInsensitive
     )
     
     if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
@@ -1747,8 +1749,14 @@ function Get-TrueNasVM {
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     if(![string]::IsNullOrEmpty($Name)) {
-        $result =  $result | Where-Object { $_.Name -like $Name }
 
+        if($CaseInsensitive.IsPresent) {
+            $result =  $result | Where-Object { $_.Name -like $Name }
+        }
+        else {
+            $result =  $result | Where-Object { $_.Name -clike $Name }
+        }
+        
         if($null -eq $result) {
             throw "VM $Name was not found."
         }
@@ -1785,9 +1793,9 @@ function Start-TrueNasVM {
     
     # Get VM Id
     if(![string]::IsNullOrEmpty($Name)) {
-        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession -Name $Name).Id
+        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession | Where-Object { $_.Name -ceq $Name } ).Id
 
-        if(($null -eq $Id) -and ($Id -eq 0)) {
+        if(($null -eq $Id) -or ($Id -eq 0)) {
             throw "VM $Name was not found."
         }
     }
@@ -1833,9 +1841,9 @@ function Stop-TrueNasVM {
     
     # Get VM Id
     if(![string]::IsNullOrEmpty($Name)) {
-        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession -Name $Name).Id
+        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession | Where-Object { $_.Name -ceq $Name } ).Id
 
-        if(($null -eq $Id) -and ($Id -eq 0)) {
+        if(($null -eq $Id) -or ($Id -eq 0)) {
             throw "VM $Name was not found."
         }
     }
@@ -1880,9 +1888,9 @@ function Restart-TrueNasVM {
     
     # Get VM Id
     if(![string]::IsNullOrEmpty($Name)) {
-        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession -Name $Name).Id
+        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession | Where-Object { $_.Name -ceq $Name } ).Id
 
-        if(($null -eq $Id) -and ($Id -eq 0)) {
+        if(($null -eq $Id) -or ($Id -eq 0)) {
             throw "VM $Name was not found."
         }
     }
