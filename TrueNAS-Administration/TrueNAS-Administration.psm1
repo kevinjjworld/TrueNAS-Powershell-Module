@@ -1733,7 +1733,7 @@ function Get-TrueNasVM {
         [Parameter(Mandatory = $false)]
         [string]$Name,
         [Parameter(Mandatory = $false)]
-        [switch]$CaseInsensitive
+        [switch]$IgnoreCase
     )
     
     if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
@@ -1750,7 +1750,7 @@ function Get-TrueNasVM {
 
     if(![string]::IsNullOrEmpty($Name)) {
 
-        if($CaseInsensitive.IsPresent) {
+        if($IgnoreCase.IsPresent) {
             $result =  $result | Where-Object { $_.Name -like $Name }
         }
         else {
@@ -1978,7 +1978,9 @@ function Get-TrueNasUser {
         [Parameter(Mandatory = $false)]
         [string]$Name,
         [Parameter(Mandatory = $false)]
-        [switch]$IncludeDSCache
+        [switch]$IncludeDSCache,
+        [Parameter(Mandatory = $false)]
+        [switch]$IgnoreCase
     )
     
 
@@ -2010,7 +2012,12 @@ function Get-TrueNasUser {
     $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     if(![string]::IsNullOrEmpty($Name)) {
-        $result =  $result | Where-Object { $_.username -like $Name }
+        if ($IgnoreCase.IsPresent) {
+            $result =  $result | Where-Object { $_.username -like $Name }    
+        }
+        else {
+            $result =  $result | Where-Object { $_.username -clike $Name }
+        }
 
         if($null -eq $result) {
             throw "User $Name was not found."
@@ -2242,7 +2249,9 @@ function Get-TrueNasGroup {
         [Parameter(Mandatory = $false)]
         [string]$Name,
         [Parameter(Mandatory = $false)]
-        [switch]$IncludeDSCache
+        [switch]$IncludeDSCache,
+        [Parameter(Mandatory = $false)]
+        [switch]$IgnoreCase
     )
     
     if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
@@ -2274,7 +2283,12 @@ function Get-TrueNasGroup {
     
 
     if(![string]::IsNullOrEmpty($Name)) {
-        $result =  $result | Where-Object { $_.group -like $Name }
+        if ($IgnoreCase.IsPresent) {
+            $result =  $result | Where-Object { $_.group -like $Name }    
+        }
+        else {
+            $result =  $result | Where-Object { $_.group -clike $Name }
+        }
 
         if($null -eq $result) {
             throw "User $Name was not found."
