@@ -1995,7 +1995,7 @@ function Get-TrueNasUser {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id,
+        [int]$Id=-1,
         [Parameter(Mandatory = $false)]
         [string]$Name,
         [Parameter(Mandatory = $false)]
@@ -2005,13 +2005,13 @@ function Get-TrueNasUser {
     )
     
 
-    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+    if ($Id -gt -1 -and ![string]::IsNullOrEmpty($Name)) {
         throw "-Id and -Name cannot be used in the same command line."
     }
 
     $ApiSubPath = "/user"
 
-    if ($Id -gt 0) {
+    if ($Id -gt -1) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -2266,7 +2266,7 @@ function Get-TrueNasGroup {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id,
+        [int]$Id=-1,
         [Parameter(Mandatory = $false)]
         [string]$Name,
         [Parameter(Mandatory = $false)]
@@ -2275,13 +2275,13 @@ function Get-TrueNasGroup {
         [switch]$IgnoreCase
     )
     
-    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+    if ($Id -gt -1 -and ![string]::IsNullOrEmpty($Name)) {
         throw "-Id and -Name cannot be used in the same command line."
     }
     
     $ApiSubPath = "/group"
 
-    if ($Id -gt 0) {
+    if ($Id -gt -1) {
         $ApiSubPath += "/id/" + $Id
     }
 
