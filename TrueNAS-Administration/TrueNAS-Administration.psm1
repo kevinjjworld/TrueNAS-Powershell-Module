@@ -506,9 +506,16 @@ function Get-TrueNasPool {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id=-1
+        [int]$Id=-1,
+        [Parameter(Mandatory = $false)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [switch]$IgnoreCase
     )
 
+    if ($Id -gt -1 -and ![string]::IsNullOrEmpty($Name)) {
+        throw "-Id and -Name cannot be used in the same command line."
+    }
     
     $ApiSubPath = "/pool"
 
@@ -518,6 +525,19 @@ function Get-TrueNasPool {
 
     
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    if(![string]::IsNullOrEmpty($Name)) {
+        if ($IgnoreCase.IsPresent) {
+            $result =  $result | Where-Object { $_.name -like $Name }    
+        }
+        else {
+            $result =  $result | Where-Object { $_.name -clike $Name }
+        }
+
+        if($null -eq $result) {
+            throw "Pool $Name was not found."
+        }
+    }
 
     return $result
 }
@@ -533,7 +553,8 @@ function Get-TrueNasPoolAttachement {
         [int]$Id
     )
 
-    
+    # Use name
+
     $ApiSubPath = "/pool/id/$id/attachments"
 
     
@@ -780,7 +801,7 @@ function Set-TrueNasZvol {
         [Parameter(Mandatory = $true)]
         [string]$id,
         [Parameter(Mandatory = $false)]
-        [long]$VolumeSize,
+        [long]$VolumeSize=-1,
         [Parameter(Mandatory = $false)]
         [string]$Comments,
         [Parameter(Mandatory = $false)]
@@ -797,7 +818,7 @@ function Set-TrueNasZvol {
     }
 
     #region Adding additional parameters
-        if($VolumeSize -gt 0){
+        if($VolumeSize -gt -1){
             $newObject.Add("volsize", $VolumeSize)
         }    
         if(![string]::IsNullOrEmpty($Comments)){
@@ -1211,13 +1232,13 @@ function Get-TrueNasService {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id
+        [int]$Id=-1
     )
 
     
     $ApiSubPath = "/service"
 
-    if ($Id -gt 0) {
+    if ($Id -gt -1) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -1427,14 +1448,14 @@ function Get-TrueNasSharing {
         [ValidateSet("afp", "nfs", "smb", "webdav")]
         [string]$Type,
         [Parameter(Mandatory = $false)]
-        [int]$Id
+        [int]$Id=-1
     )
 
     
     $Type = $Type.ToLower()
     $ApiSubPath = "/sharing/$Type"
 
-    if ($Id -gt 0) {
+    if ($Id -gt -1) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -2012,13 +2033,13 @@ function Get-TrueNasVMDevices {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id
+        [int]$Id=-1
     )
     
     
     $ApiSubPath = "/vm/device"
 
-    if ($Id -gt 0) {
+    if ($Id -gt -1) {
         $ApiSubPath += "/id/" + $Id
     }
     
