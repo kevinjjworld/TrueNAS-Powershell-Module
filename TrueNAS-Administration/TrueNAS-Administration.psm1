@@ -1729,20 +1729,20 @@ function Get-TrueNasVM {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id,
+        [int]$Id=-1,
         [Parameter(Mandatory = $false)]
         [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$IgnoreCase
     )
     
-    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+    if ($Id -gt -1 -and ![string]::IsNullOrEmpty($Name)) {
         throw "-Id and -Name cannot be used in the same command line."
     }
 
     $ApiSubPath = "/vm"
 
-    if ($Id -gt 0) {
+    if ($Id -gt -1) {
         $ApiSubPath += "/id/" + $Id
     }
 
@@ -1780,22 +1780,29 @@ function Start-TrueNasVM {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id,
+        [int]$Id=-1,
         [Parameter(Mandatory = $false)]
         [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$Force
     )
     
-    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+    if ($Id -gt -1 -and ![string]::IsNullOrEmpty($Name)) {
         throw "-Id and -Name cannot be used in the same command line."
     }
     
     # Get VM Id
     if(![string]::IsNullOrEmpty($Name)) {
-        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession | Where-Object { $_.Name -ceq $Name } ).Id
+        if($Name -match "\*") {
+            throw "The * wildcard character is not allowed for this command line."
+        }
 
-        if(($null -eq $Id) -or ($Id -eq 0)) {
+        $VM = Get-TrueNasVM -TrueNasSession $TrueNasSession | Where-Object { $_.Name -ceq $Name }
+        
+        if($null -ne $VM) {
+            $Id = $VM.id
+        }
+        else {
             throw "VM $Name was not found."
         }
     }
@@ -1828,22 +1835,29 @@ function Stop-TrueNasVM {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id,
+        [int]$Id=-1,
         [Parameter(Mandatory = $false)]
         [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$Force
     )
     
-    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+    if ($Id -gt -1 -and ![string]::IsNullOrEmpty($Name)) {
         throw "-Id and -Name cannot be used in the same command line."
     }
     
     # Get VM Id
     if(![string]::IsNullOrEmpty($Name)) {
-        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession | Where-Object { $_.Name -ceq $Name } ).Id
+        if($Name -match "\*") {
+            throw "The * wildcard character is not allowed for this command line."
+        }
 
-        if(($null -eq $Id) -or ($Id -eq 0)) {
+        $VM = Get-TrueNasVM -TrueNasSession $TrueNasSession | Where-Object { $_.Name -ceq $Name }
+        
+        if($null -ne $VM) {
+            $Id = $VM.id
+        }
+        else {
             throw "VM $Name was not found."
         }
     }
@@ -1877,20 +1891,27 @@ function Restart-TrueNasVM {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id,
+        [int]$Id=-1,
         [Parameter(Mandatory = $false)]
         [string]$Name
     )
     
-    if ($Id -gt 0 -and ![string]::IsNullOrEmpty($Name)) {
+    if ($Id -gt -1 -and ![string]::IsNullOrEmpty($Name)) {
         throw "-Id and -Name cannot be used in the same command line."
     }
     
     # Get VM Id
     if(![string]::IsNullOrEmpty($Name)) {
-        $Id =  (Get-TrueNasVM -TrueNasSession $TrueNasSession | Where-Object { $_.Name -ceq $Name } ).Id
+        if($Name -match "\*") {
+            throw "The * wildcard character is not allowed for this command line."
+        }
 
-        if(($null -eq $Id) -or ($Id -eq 0)) {
+        $VM = Get-TrueNasVM -TrueNasSession $TrueNasSession | Where-Object { $_.Name -ceq $Name }
+        
+        if($null -ne $VM) {
+            $Id = $VM.id
+        }
+        else {
             throw "VM $Name was not found."
         }
     }
