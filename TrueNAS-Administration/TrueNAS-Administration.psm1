@@ -549,14 +549,41 @@ function Get-TrueNasPoolAttachement {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [int]$Id
+        [Parameter(Mandatory = $false)]
+        [int]$Id=-1,
+        [Parameter(Mandatory = $false)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [switch]$IgnoreCase
     )
 
-    # Use name
+    if ($Id -gt -1 -and ![string]::IsNullOrEmpty($Name)) {
+        throw "-Id and -Name cannot be used in the same command line."
+    }
 
+    # Get Pool Id
+    if(![string]::IsNullOrEmpty($Name)) {
+        if($Name -match "\*") {
+            throw "The * wildcard character is not allowed for this command line."
+        }
+
+        if($IgnoreCase.IsPresent) {
+            $Pool = Get-TrueNasPool -TrueNasSession $TrueNasSession | Where-Object { $_.Name -like $Name }
+        }
+        else {
+            $Pool = Get-TrueNasPool -TrueNasSession $TrueNasSession | Where-Object { $_.Name -clike $Name }
+        }
+        
+        if($null -ne $Pool) {
+            $Id = $Pool.id
+        }
+        else {
+            throw "Pool $Name was not found."
+        }
+    }
+
+    
     $ApiSubPath = "/pool/id/$id/attachments"
-
     
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
