@@ -362,7 +362,7 @@ function Unregister-TrueNasAlert {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-         [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true)]
         [string]$Id
     )
 
@@ -387,7 +387,7 @@ function Restore-TrueNasAlert {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-         [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true)]
         [string]$Id
     )
 
@@ -413,18 +413,60 @@ function Get-TrueNasDisk {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id
+        [string]$Id,
+        [Parameter(Mandatory = $false)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [switch]$IncludeExpired,
+        [Parameter(Mandatory = $false)]
+        [switch]$WithPoolName,
+        [Parameter(Mandatory = $false)]
+        [switch]$WithPasswords
     )
 
-    
+    if (![string]::IsNullOrEmpty($Id) -and ![string]::IsNullOrEmpty($Name)) {
+        throw "-Id and -Name cannot be used in the same command line."
+    }
+
     $ApiSubPath = "/disk"
 
-    if ($Id -gt 0) {
+    if (![string]::IsNullOrEmpty($Id)) {
         $ApiSubPath += "/id/" + $Id
     }
     
-    
-    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    $newObject = @{
+        "query-filters" = @();
+        "query-options" = @{ extra = @{} };
+    }
+
+    #region Adding additional parameters
+        if($IncludeExpired.IsPresent){
+            $newObject.'query-options'.extra.Add("include_expired", $true )
+        }
+        if($WithPoolName.IsPresent){
+            $newObject.'query-options'.extra.Add("pools", $true )
+        }
+        if($WithPasswords.IsPresent){
+            $newObject.'query-options'.extra.Add("passwords", $true )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    if(![string]::IsNullOrEmpty($Name)) {
+        if ($IgnoreCase.IsPresent) {
+            $result =  $result | Where-Object { $_.name -like $Name }    
+        }
+        else {
+            $result =  $result | Where-Object { $_.name -clike $Name }
+        }
+
+        if($null -eq $result) {
+            throw "Disk $Name was not found."
+        }
+    }
 
     return $result
 }
@@ -464,13 +506,13 @@ function Get-TrueNasPool {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id
+        [int]$Id=-1
     )
 
     
     $ApiSubPath = "/pool"
 
-    if ($Id -gt 0) {
+    if ($Id -gt -1) {
         $ApiSubPath += "/id/" + $Id
     }
 
