@@ -44,7 +44,7 @@ function Get-TrueNasSession {
         [switch]$SkipCertificateCheck
     )
 
-    
+    # 
     $apiFullUri = [string]::Format("https://{0}:{1}/api/v2.0/", $Server, $Port)
 
     $params = @{
@@ -478,17 +478,34 @@ function Get-TrueNasDiskTemperature {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
         [string[]]$Names
     )
 
+    if (![string]::IsNullOrEmpty($Name) -and $Names.Count -gt 0) {
+        throw "-Name and -Names cannot be used in the same command line."
+    }
     
-    $ApiSubPath = "/disk/temperatures"
+    $ApiSubPath = "/disk/temperature"    
+
+    if ($Names.Count -gt 0) {
+        $ApiSubPath = "/disk/temperatures"
+    }
 
     
     $newObject = @{
-        names = $Names
     }
+    
+    #region Adding additional parameters
+        if(![string]::IsNullOrEmpty($Name)){
+            $newObject.Add("name", $Name )
+        }
+        if($Names.Count -gt 0){
+            $newObject.Add("names", $Names )
+        }
+    #endregion
     
     $body = $newObject | ConvertTo-Json
 
@@ -541,12 +558,6 @@ function Get-TrueNasPool {
 
     return $result
 }
-
-Register-ArgumentCompleter -CommandName Get-TrueNasPool -ParameterName Name -ScriptBlock {
-    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
-    (Get-TrueNasPool -TrueNasSession $fakeBoundParameter.TrueNasSession).name
-}
-
 
 function Get-TrueNasPoolAttachement {
     
@@ -2643,6 +2654,28 @@ function Test-TrueNasActiveDirectory {
 
     return $result
 }
+
+
+# Registers a custom argument completer for parameter "Name" without command line name but conditions in script block
+Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
+
+    switch -Regex ($commandName) {
+        "^Get-TrueNasPool"
+        {
+            (Get-TrueNasPool -TrueNasSession $fakeBoundParameter.TrueNasSession).name
+            break
+        }
+        "^Get-TrueNasDisk"
+        {
+            (Get-TrueNasDisk -TrueNasSession $fakeBoundParameter.TrueNasSession -WarningAction SilentlyContinue).name
+            break
+        }
+        Default {}
+    }
+
+}
+
 
 <# Example - Register-ArgumentCompleter without command line name but conditions in script block
 Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
