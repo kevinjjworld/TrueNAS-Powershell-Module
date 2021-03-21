@@ -723,7 +723,7 @@ function Get-TrueNasDataset {
 
 New-Alias -Name Get-TrueNasZvol -Value Get-TrueNasDataset -Force
 
-function Get-TrueNasChildDataset {
+function Get-TrueNasDatasetChildren {
     
     [CmdletBinding()]
     Param
@@ -769,6 +769,8 @@ function Get-TrueNasChildDataset {
 
     return $result
 }
+
+New-Alias -Name Get-TrueNasChildDataset -Value Get-TrueNasDatasetChildren -Force
 
 function New-TrueNasDataset {
     
@@ -2726,32 +2728,20 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
     switch -Regex ($commandName) {
         "^Get-TrueNasPool"
         {
-            (Get-TrueNasPool -TrueNasSession $fakeBoundParameter.TrueNasSession).name
+            (Get-TrueNasPool -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*").name
             break
         }
         "^Get-TrueNasDisk"
         {
-            (Get-TrueNasDisk -TrueNasSession $fakeBoundParameter.TrueNasSession -WarningAction SilentlyContinue).name
+            (Get-TrueNasDisk -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -WarningAction SilentlyContinue).name
             break
         }
-        Default {}
-    }
-
-}
-
-
-<# Example - Register-ArgumentCompleter without command line name but conditions in script block
-Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
-    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
-
-    switch ($commandName) {
-        Get-TrueNasPool
+        "^Get-TrueNasDataset"
         {
-            (Get-TrueNasPool -TrueNasSession $fakeBoundParameter.TrueNasSession).name
+            (Get-TrueNasDisk -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -WarningAction SilentlyContinue).name
             break
         }
         Default {}
     }
 
 }
-#>
