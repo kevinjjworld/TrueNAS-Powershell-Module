@@ -723,7 +723,52 @@ function Get-TrueNasDataset {
 
 New-Alias -Name Get-TrueNasZvol -Value Get-TrueNasDataset -Force
 
+function Get-TrueNasChildDataset {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [Alias('Id')]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [switch]$Recurse
+    )
+    
+    $Name = $Name -replace("/","%2F")
 
+    
+    $ApiSubPath = "/pool/dataset"
+
+    if (![string]::IsNullOrEmpty($Name)) {
+        $ApiSubPath += "/id/" + $Name
+    }
+
+    $newObject = @{
+        "query-filters" = @();
+        "query-options" = @{};
+    }
+
+    #region Adding additional parameters
+        if($Recurse.IsPresent){
+            $newObject.'query-options'.Add( "extra", @{"flat" = $true} )
+        }
+        else {
+            $newObject.'query-options'.Add( "extra", @{"flat" = $false} )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    
+    $result = $result.children
+
+    return $result
+}
 
 function New-TrueNasDataset {
     
