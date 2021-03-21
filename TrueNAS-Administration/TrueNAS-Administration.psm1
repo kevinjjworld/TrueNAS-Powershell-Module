@@ -687,16 +687,23 @@ function Get-TrueNasDataset {
         [Alias('Id')]
         [string]$Name,
         [Parameter(Mandatory = $false)]
-        [switch]$Recurse
+        [switch]$Recurse,
+        [Parameter(Mandatory = $false)]
+        [switch]$IgnoreCase
     )
 
-    $Name = $Name -replace("/","%2F")
-
-    
     $ApiSubPath = "/pool/dataset"
 
     if (![string]::IsNullOrEmpty($Name)) {
-        $ApiSubPath += "/id/" + $Name
+        if ($Name -notmatch "\*" -and !$IgnoreCase.IsPresent) {
+            $ApiSubPath += "/id/" + $($Name -replace("/","%2F"))    
+        }
+        else {
+            $Name2 = $((Split-Path $Name) -replace("\\","/") -replace("\/$",""))
+            if(![string]::IsNullOrEmpty($Name2) -and !$IgnoreCase.IsPresent) {
+                $ApiSubPath += "/id/" + $($Name2 -replace("/","%2F"))
+            }
+        }
     }
 
     $newObject = @{
@@ -715,9 +722,26 @@ function Get-TrueNasDataset {
 
     $body = $newObject | ConvertTo-Json
     
-    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
-    
+
+    if ($Name -match "\*" -or $IgnoreCase.IsPresent) {
+
+        if ($Name -match "\/") {
+            $result = $result.children
+        }
+
+        if($IgnoreCase.IsPresent) {
+            $result =  $result | Where-Object { $_.Name -like $Name }
+        }
+        else {
+            $result =  $result | Where-Object { $_.Name -clike $Name }
+        }
+        
+        if($null -eq $result) {
+            throw "Dataset $Name was not found."
+        }
+    }
+
     return $result
 }
 
@@ -730,13 +754,17 @@ function Get-TrueNasDatasetChildren {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true)]
         [Alias('Id')]
         [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$Recurse
     )
     
+    if($Name -match "\*") {
+        throw "The * wildcard character is not allowed for this command line."
+    }
+
     $Name = $Name -replace("/","%2F")
 
     
@@ -832,8 +860,9 @@ function Set-TrueNasDataset {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [string]$Id,
+        [Parameter(Mandatory = $false)]
+        [Alias('Id')]
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [string]$Comments,
         [Parameter(Mandatory = $false)]
@@ -844,10 +873,10 @@ function Set-TrueNasDataset {
         [string]$ReadOnly
     )
     
-    $Id = $Id -replace("/","%2F")
+    $Name = $Name -replace("/","%2F")
 
     
-    $ApiSubPath = "/pool/dataset/id/$Id"
+    $ApiSubPath = "/pool/dataset/id/$Name"
 
     switch ($ReadOnly) {
         "True" { $ReadOnly = "ON" }
@@ -903,7 +932,6 @@ function New-TrueNasZvol {
 
     
     $ApiSubPath = "/pool/dataset"
-
     
     $newObject = @{
         type = "VOLUME";
@@ -938,8 +966,9 @@ function Set-TrueNasZvol {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [string]$id,
+        [Parameter(Mandatory = $false)]
+        [Alias('Id')]
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [long]$VolumeSize=-1,
         [Parameter(Mandatory = $false)]
@@ -948,10 +977,10 @@ function Set-TrueNasZvol {
         [switch]$ForceSize
     )
 
-    $Id = $Id -replace("/","%2F")
+    $Name = $Name -replace("/","%2F")
 
     
-    $ApiSubPath = "/pool/dataset/id/$Id"
+    $ApiSubPath = "/pool/dataset/id/$Name"
 
     
     $newObject = @{
@@ -984,18 +1013,19 @@ function Remove-TrueNasDataset {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [string]$Id,
+        [Parameter(Mandatory = $false)]
+        [Alias('Id')]
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$Recurse,
         [Parameter(Mandatory = $false)]
         [switch]$Force
     )
     
-    $Id = $Id -replace("/","%2F")
+    $Name = $Name -replace("/","%2F")
     
     
-    $ApiSubPath = "/pool/dataset/id/$Id"
+    $ApiSubPath = "/pool/dataset/id/$Name"
     
     
     $newObject = @{
@@ -1029,15 +1059,16 @@ function Get-TrueNasDatasetAttachment {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [string]$Id
+        [Parameter(Mandatory = $false)]
+        [Alias('Id')]
+        [string]$Name
     )
 
-    $Id = $Id -replace("/","%2F")
+    $Name = $Name -replace("/","%2F")
 
     
     $ApiSubPath = "/pool/dataset"
-    $ApiSubPath += "/id/" + $Id + "/attachments"
+    $ApiSubPath += "/id/" + $Name + "/attachments"
 
     
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
@@ -1052,15 +1083,16 @@ function Get-TrueNasDatasetProcess {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [string]$Id
+        [Parameter(Mandatory = $false)]
+        [Alias('Id')]
+        [string]$Name
     )
 
-    $Id = $Id -replace("/","%2F")
+    $Name = $Name -replace("/","%2F")
 
     
     $ApiSubPath = "/pool/dataset"
-    $ApiSubPath += "/id/" + $Id + "/processes"
+    $ApiSubPath += "/id/" + $Name + "/processes"
 
     
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
@@ -2738,7 +2770,8 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
         }
         "^Get-TrueNasDataset"
         {
-            (Get-TrueNasDisk -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -WarningAction SilentlyContinue).name
+            #(Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase:$fakeBoundParameter.IgnoreCase -WarningAction SilentlyContinue).name
+            (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -WarningAction SilentlyContinue).name
             break
         }
         Default {}
