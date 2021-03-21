@@ -684,28 +684,46 @@ function Get-TrueNasDataset {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [string]$Id
+        [Alias('Id')]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [switch]$Recurse
     )
 
-    # TODO
-    # Add query-options.extra.flat attribute
-
-    $Id = $Id -replace("/","%2F")
+    $Name = $Name -replace("/","%2F")
 
     
     $ApiSubPath = "/pool/dataset"
 
-    if (![string]::IsNullOrEmpty($Id)) {
-        $ApiSubPath += "/id/" + $Id
+    if (![string]::IsNullOrEmpty($Name)) {
+        $ApiSubPath += "/id/" + $Name
     }
 
+    $newObject = @{
+        "query-filters" = @();
+        "query-options" = @{};
+    }
+
+    #region Adding additional parameters
+        if($Recurse.IsPresent){
+            $newObject.'query-options'.Add( "extra", @{"flat" = $true} )
+        }
+        else {
+            $newObject.'query-options'.Add( "extra", @{"flat" = $false} )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
     
-    $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
     return $result
 }
 
 New-Alias -Name Get-TrueNasZvol -Value Get-TrueNasDataset -Force
+
+
 
 function New-TrueNasDataset {
     
