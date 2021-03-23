@@ -1028,7 +1028,6 @@ function Remove-TrueNasDataset {
     
     $Name = $Name -replace("/","%2F")
     
-    
     $ApiSubPath = "/pool/dataset/id/$Name"
     
     
@@ -1112,7 +1111,10 @@ function Get-TrueNasSnapshot {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [string]$Id,
+        [Alias('Id')]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [string]$Dataset,
         [Parameter(Mandatory = $false)]
         [ValidateSet("id", "name", "pool", "type", "properties", "holds", "dataset", "snapshot_name", "mountpoint")]
         [string]$OrderBy,
@@ -1121,10 +1123,14 @@ function Get-TrueNasSnapshot {
         [string[]]$Select
     )
 
-    $Id = $Id -replace("/","%2F")
+    if (![string]::IsNullOrEmpty($Name) -and ![string]::IsNullOrEmpty($Dataset)) {
+        throw "-Name and -Dataset cannot be used in the same command line."
+    }
+
+    $Name = $Name -replace("/","%2F")
     $ApiSubPath = "/zfs/snapshot"
-    if (![string]::IsNullOrEmpty($Id)) {
-        $ApiSubPath += "/id/" + $Id
+    if (![string]::IsNullOrEmpty($Name)) {
+        $ApiSubPath += "/id/" + $Name
     }
     
     $newObject = @{
@@ -1142,9 +1148,12 @@ function Get-TrueNasSnapshot {
     #endregion
 
     $body = $newObject | ConvertTo-Json
-
     
     $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    if (![string]::IsNullOrEmpty($Dataset)) {
+        $result = $result | Where-Object { $_.dataset -like "$Dataset*" }
+    }
 
     return $result
 }
@@ -2777,6 +2786,23 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
             (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name
             break
         }
+        
+        Default {}
+    }
+
+}
+
+# Registers a custom argument completer for parameter "Name" without command line name but conditions in script block
+Register-ArgumentCompleter -ParameterName Dataset -ScriptBlock {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
+
+    switch -Regex ($commandName) {
+        "^Get-TrueNasSnapshot"
+        {
+            (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name
+            break
+        }
+        
         Default {}
     }
 
