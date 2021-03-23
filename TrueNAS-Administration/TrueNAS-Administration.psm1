@@ -676,6 +676,34 @@ function Get-TrueNasPoolDisk {
     return $result
 }
 
+function Private_GetAllDatasets {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    $ApiSubPath = "/pool/dataset"
+
+    
+    $newObject = @{
+        "query-filters" = @();
+        "query-options" = @{};
+    }
+
+    #region Adding additional parameters
+        $newObject.'query-options'.Add( "extra", @{"flat" = $true} )
+    #endregion
+    
+    $body = $newObject | ConvertTo-Json
+
+    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasDataset {
     
     [CmdletBinding()]
@@ -694,51 +722,46 @@ function Get-TrueNasDataset {
 
     $ApiSubPath = "/pool/dataset"
 
-    if (![string]::IsNullOrEmpty($Name)) {
-        if ($Name -notmatch "\*" -and !$IgnoreCase.IsPresent) {
-            $ApiSubPath += "/id/" + $($Name -replace("/","%2F"))    
-        }
-        else {
-            $Name2 = $((Split-Path $Name) -replace("\\","/") -replace("\/$",""))
-            if(![string]::IsNullOrEmpty($Name2) -and !$IgnoreCase.IsPresent) {
-                $ApiSubPath += "/id/" + $($Name2 -replace("/","%2F"))
-            }
-        }
-    }
-
-    $newObject = @{
-        "query-filters" = @();
-        "query-options" = @{};
-    }
-
-    #region Adding additional parameters
-        if($Recurse.IsPresent){
-            $newObject.'query-options'.Add( "extra", @{"flat" = $true} )
-        }
-        else {
-            $newObject.'query-options'.Add( "extra", @{"flat" = $false} )
-        }
-    #endregion
-
-    $body = $newObject | ConvertTo-Json
     
-    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    if ($Name -notmatch "\*" -and !$IgnoreCase.IsPresent -and !$Recurse.IsPresent) {
+        Write-Verbose "Fast - Call Api Path : $ApiSubPath"
+        if ([string]::IsNullOrEmpty($Name)) {
+            $newObject = @{
+                "query-filters" = @();
+                # 2021/03/23 - The query-options.extra.flat attribute don't work with "/pool/dataset/id/$Id"
+                "query-options" = @{ extra = @{flat = $false} };
+            }
 
-    if ($Name -match "\*" -or $IgnoreCase.IsPresent) {
-
-        if ($Name -match "\/") {
-            $result = $result.children
-        }
-
-        if($IgnoreCase.IsPresent) {
-            $result =  $result | Where-Object { $_.Name -like $Name }
+            $body = $newObject | ConvertTo-Json
         }
         else {
-            $result =  $result | Where-Object { $_.Name -clike $Name }
+            $ApiSubPath += "/id/" + $($Name -replace("/","%2F"))
         }
+
+        $result =  Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    }
+    else {
+        Write-Verbose "Slow - Call Api Path : $ApiSubPath"
+        $result = Private_GetAllDatasets -TrueNasSession $TrueNasSession
+
+        if(![string]::IsNullOrEmpty($Name)) {
+            if (!$Recurse.IsPresent) {
+                $count = ($Name -split "\/").Count
+                $parent = $((Split-Path $Name) -replace("\\","/") -replace("\/$",""))
+                
+                if(![string]::IsNullOrEmpty($parent) -and $parent -match "\*") {
+                    $result = $result | Where-Object { $_.name -like $parent }
+                }
+                
+                $result = $result | Where-Object { ($_.name -split "\/").Count -eq $count }
+            }
         
-        if($null -eq $result) {
-            throw "Dataset $Name was not found."
+            if ($IgnoreCase.IsPresent) {
+                $result = $result | Where-Object { $_.name -like $Name }
+            }
+            else {
+                $result = $result | Where-Object { $_.name -clike $Name }
+            }
         }
     }
 
@@ -758,42 +781,23 @@ function Get-TrueNasDatasetChildren {
         [Alias('Id')]
         [string]$Name,
         [Parameter(Mandatory = $false)]
-        [switch]$Recurse
+        [switch]$Recurse,
+        [Parameter(Mandatory = $false)]
+        [switch]$IgnoreCase
     )
+    
     
     if($Name -match "\*") {
         throw "The * wildcard character is not allowed for this command line."
     }
 
-    $Name = $Name -replace("/","%2F")
-
-    
-    $ApiSubPath = "/pool/dataset"
-
-    if (![string]::IsNullOrEmpty($Name)) {
-        $ApiSubPath += "/id/" + $Name
+    if($Recurse.IsPresent) {
+        $result = Get-TrueNasDataset -TrueNasSession $TrueNasSession -Name "$Name*" -Recurse -IgnoreCase:$IgnoreCase
     }
-
-    $newObject = @{
-        "query-filters" = @();
-        "query-options" = @{};
+    else {
+        $result = Get-TrueNasDataset -TrueNasSession $TrueNasSession -Name $Name -IgnoreCase:$IgnoreCase
+        $result = $result.children
     }
-
-    #region Adding additional parameters
-        if($Recurse.IsPresent){
-            $newObject.'query-options'.Add( "extra", @{"flat" = $true} )
-        }
-        else {
-            $newObject.'query-options'.Add( "extra", @{"flat" = $false} )
-        }
-    #endregion
-
-    $body = $newObject | ConvertTo-Json
-    
-    
-    $result = Invoke-RestMethodOnFreeNAS -Method Get -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
-    
-    $result = $result.children
 
     return $result
 }
@@ -2770,11 +2774,12 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
         }
         "^Get-TrueNasDataset"
         {
-            #(Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase:$fakeBoundParameter.IgnoreCase -WarningAction SilentlyContinue).name
-            (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -WarningAction SilentlyContinue).name
+            (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name
             break
         }
         Default {}
     }
 
 }
+
+Export-ModuleMember -Function "*-TrueNAS*" -Alias "*"
