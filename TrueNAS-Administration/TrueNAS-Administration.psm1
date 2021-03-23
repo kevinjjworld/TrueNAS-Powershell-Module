@@ -2781,7 +2781,7 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
             (Get-TrueNasDisk -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -WarningAction SilentlyContinue).name
             break
         }
-        "^Get-TrueNasDataset|^New-TrueNasDataset"
+        "^Get-TrueNasDataset|^New-TrueNasDataset|^Set-TrueNasDataset|^New-TrueNasZvol|^Set-TrueNasZvol"
         {
             (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name
             break
