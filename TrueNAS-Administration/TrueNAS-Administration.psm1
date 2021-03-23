@@ -2781,7 +2781,7 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
             (Get-TrueNasDisk -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -WarningAction SilentlyContinue).name
             break
         }
-        "^Get-TrueNasDataset"
+        "^Get-TrueNasDataset|^New-TrueNasDataset"
         {
             (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name
             break
@@ -2797,7 +2797,7 @@ Register-ArgumentCompleter -ParameterName Dataset -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
 
     switch -Regex ($commandName) {
-        "^Get-TrueNasSnapshot"
+        "^Get-TrueNasSnapshot|^New-TrueNasSnapshot"
         {
             (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name
             break
