@@ -1325,7 +1325,7 @@ function Get-TrueNasChildItem {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [string]$Path,
         [Parameter(Mandatory = $false)]
         [ValidateSet("name", "path", "realpath", "type", "size", "mode", "acl", "uid", "gid")]
@@ -1338,7 +1338,10 @@ function Get-TrueNasChildItem {
     
     $ApiSubPath = "/filesystem/listdir"
 
-    
+    if ([string]::IsNullOrEmpty($Path)) {
+        $Path = "/"
+    }
+
     $newObject = @{
         path = $Path;
         "query-filters" = @();
@@ -1355,7 +1358,6 @@ function Get-TrueNasChildItem {
     #endregion
 
     $body = $newObject | ConvertTo-Json
-
     
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
@@ -2792,6 +2794,11 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
 
 }
 
+Register-ArgumentCompleter -CommandName New-TrueNasSnapshotClone -ParameterName Destination -ScriptBlock {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
+    (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name
+}
+
 # Registers a custom argument completer for parameter "Name" without command line name but conditions in script block
 Register-ArgumentCompleter -ParameterName Dataset -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
@@ -2808,4 +2815,4 @@ Register-ArgumentCompleter -ParameterName Dataset -ScriptBlock {
 
 }
 
-Export-ModuleMember -Function "*-TrueNAS*" -Alias "*"
+Export-ModuleMember -Function "*-TrueNAS*","Invoke-RestMethodOnFreeNAS" -Alias "*"
