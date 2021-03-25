@@ -1400,7 +1400,7 @@ function Get-TrueNasChildItem {
 
     $body = $newObject | ConvertTo-Json
     
-    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath -ErrorAction Stop
 
     if ($PathWithWildCard -match "\*") {
         $result = $result | Where-Object { $_.path -like $PathWithWildCard }
@@ -2844,17 +2844,28 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
 
 }
 
-Register-ArgumentCompleter -CommandName Get-TrueNasChildItem -ParameterName Path -ScriptBlock {
+Register-ArgumentCompleter -ParameterName Path -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
-    (Get-TrueNasChildItem -TrueNasSession $fakeBoundParameter.TrueNasSession -Path "$wordToComplete*").path | Sort-Object
+
+    switch -Regex ($commandName) {
+        "^Get-TrueNasChildItem|^Get-TrueNasPathAcl"
+        {
+            (Get-TrueNasChildItem -TrueNasSession $fakeBoundParameter.TrueNasSession -Path "$wordToComplete*").path | Sort-Object
+            break
+        }
+        
+        Default {}
+    }
+
 }
+
 
 Register-ArgumentCompleter -CommandName New-TrueNasSnapshotClone -ParameterName Destination -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
     (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name | Sort-Object
 }
 
-# Registers a custom argument completer for parameter "Name" without command line name but conditions in script block
+
 Register-ArgumentCompleter -ParameterName Dataset -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
 
