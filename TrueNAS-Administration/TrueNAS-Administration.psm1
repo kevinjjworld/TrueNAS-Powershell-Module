@@ -857,6 +857,27 @@ function New-TrueNasDataset {
     return $result
 }
 
+function Private_PromoteTrueNasDataset {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [Alias("Id")]
+        [string]$Name
+    )
+
+    $Name = $Name -replace("/","%2F")
+    
+    $ApiSubPath = "/pool/dataset/id/$Name/promote"
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Set-TrueNasDataset {
     
     [CmdletBinding()]
@@ -874,12 +895,25 @@ function Set-TrueNasDataset {
         [string]$AclMode,
         [Parameter(Mandatory = $false)]
         [ValidateSet("True", "False", "ON", "OFF")]
-        [string]$ReadOnly
+        [string]$ReadOnly,
+        [Parameter(Mandatory = $false)]
+        [switch]$Promote
     )
-    
+
+    if ($Promote.IsPresent) {
+        if (![string]::IsNullOrEmpty($Comments) -or ![string]::IsNullOrEmpty($AclMode) -or ![string]::IsNullOrEmpty($ReadOnly)) {
+            throw "The -promote parameter must be used alone."
+        }
+
+        if ([string]::IsNullOrEmpty($Name)) {
+            throw "The -promote parameter must be used with -Name parameter."
+        }
+
+        return Private_PromoteTrueNasDataset -TrueNasSession $TrueNasSession -Name $Name
+    }
+
     $Name = $Name -replace("/","%2F")
 
-    
     $ApiSubPath = "/pool/dataset/id/$Name"
 
     switch ($ReadOnly) {
@@ -1209,13 +1243,14 @@ function Remove-TrueNasSnapshot {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [string]$Id,
+        [Alias("Id")]
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$Defer
     )
 
-    $Id = $Id -replace("/","%2F")
-    $ApiSubPath = "/zfs/snapshot/id/$Id"
+    $Name = $Name -replace("/","%2F")
+    $ApiSubPath = "/zfs/snapshot/id/$Name"
     
     $newObject = @{
     }
@@ -1267,7 +1302,7 @@ function New-TrueNasSnapshotClone {
     return $result
 }
 
-function Invoke-TrueNasSnapshotRollback {
+function Restore-TrueNasSnapshot {
     
     [CmdletBinding()]
     Param
@@ -1275,7 +1310,8 @@ function Invoke-TrueNasSnapshotRollback {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [string]$Id,
+        [Alias("Id")]
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$RemoveNewerSnapshots,
         [Parameter(Mandatory = $false)]
@@ -1288,11 +1324,11 @@ function Invoke-TrueNasSnapshotRollback {
         throw "-RemoveNewerSnapshots and -RemoveNewerSnapshotsAndClones cannot be used in the same command line."
     }
 
-    #$Id = $Id -replace("/","%2F") # Id is not in the URI, so this line is useless
+    #$Name = $Name -replace("/","%2F") # Id is not in the URI, so this line is useless
     $ApiSubPath = "/zfs/snapshot/rollback"
     
     $newObject = @{
-        id = $Id;
+        id = $Name;
         options = @{};
     }
 
@@ -1316,7 +1352,7 @@ function Invoke-TrueNasSnapshotRollback {
     return $result
 }
 
-New-Alias -Name Restore-TrueNasSnapshot -Value Invoke-TrueNasSnapshotRollback -Force
+New-Alias -Name Invoke-TrueNasSnapshotRollback -Value Restore-TrueNasSnapshot -Force
 
 function Get-TrueNasChildItem {
     
@@ -1337,6 +1373,11 @@ function Get-TrueNasChildItem {
 
     
     $ApiSubPath = "/filesystem/listdir"
+
+    if ($Path -match "\*") {
+        $PathWithWildCard = $Path
+        $Path = $PathWithWildCard -replace("\*.*$","") -replace("\/(?:.(?!\/))*$","")
+    }
 
     if ([string]::IsNullOrEmpty($Path)) {
         $Path = "/"
@@ -1360,6 +1401,14 @@ function Get-TrueNasChildItem {
     $body = $newObject | ConvertTo-Json
     
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    if ($PathWithWildCard -match "\*") {
+        $result = $result | Where-Object { $_.path -like $PathWithWildCard }
+    }
+
+    if($null -eq $result) {
+        throw "Path $Path does not exist."
+    }
 
     return $result
 }
@@ -2776,17 +2825,17 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
     switch -Regex ($commandName) {
         "^Get-TrueNasPool"
         {
-            (Get-TrueNasPool -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*").name
+            (Get-TrueNasPool -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*").name | Sort-Object
             break
         }
         "^Get-TrueNasDisk"
         {
-            (Get-TrueNasDisk -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -WarningAction SilentlyContinue).name
+            (Get-TrueNasDisk -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -WarningAction SilentlyContinue).name | Sort-Object
             break
         }
-        "^Get-TrueNasDataset|^New-TrueNasDataset|^Set-TrueNasDataset|^New-TrueNasZvol|^Set-TrueNasZvol"
+        "^Get-TrueNasDataset|^New-TrueNasDataset|^Set-TrueNasDataset|^New-TrueNasZvol|^Set-TrueNasZvol|^Remove-TrueNasDataset"
         {
-            (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name
+            (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name | Sort-Object
             break
         }
         
@@ -2795,10 +2844,14 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
 
 }
 
+Register-ArgumentCompleter -CommandName Get-TrueNasChildItem -ParameterName Path -ScriptBlock {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
+    (Get-TrueNasChildItem -TrueNasSession $fakeBoundParameter.TrueNasSession -Path "$wordToComplete*").path | Sort-Object
+}
 
 Register-ArgumentCompleter -CommandName New-TrueNasSnapshotClone -ParameterName Destination -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
-    (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name
+    (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name | Sort-Object
 }
 
 # Registers a custom argument completer for parameter "Name" without command line name but conditions in script block
@@ -2808,7 +2861,7 @@ Register-ArgumentCompleter -ParameterName Dataset -ScriptBlock {
     switch -Regex ($commandName) {
         "^Get-TrueNasSnapshot|^New-TrueNasSnapshot"
         {
-            (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name
+            (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name | Sort-Object
             break
         }
         
