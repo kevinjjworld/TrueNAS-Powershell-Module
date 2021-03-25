@@ -712,7 +712,7 @@ function Get-TrueNasDataset {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [Alias('Id')]
+        [Alias("Id")]
         [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$Recurse,
@@ -778,7 +778,7 @@ function Get-TrueNasDatasetChildren {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [Alias('Id')]
+        [Alias("Id")]
         [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$Recurse,
@@ -865,7 +865,7 @@ function Set-TrueNasDataset {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [Alias('Id')]
+        [Alias("Id")]
         [string]$Name,
         [Parameter(Mandatory = $false)]
         [string]$Comments,
@@ -971,7 +971,7 @@ function Set-TrueNasZvol {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [Alias('Id')]
+        [Alias("Id")]
         [string]$Name,
         [Parameter(Mandatory = $false)]
         [long]$VolumeSize=-1,
@@ -1018,7 +1018,7 @@ function Remove-TrueNasDataset {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [Alias('Id')]
+        [Alias("Id")]
         [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$Recurse,
@@ -1063,7 +1063,7 @@ function Get-TrueNasDatasetAttachment {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [Alias('Id')]
+        [Alias("Id")]
         [string]$Name
     )
 
@@ -1087,7 +1087,7 @@ function Get-TrueNasDatasetProcess {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [Alias('Id')]
+        [Alias("Id")]
         [string]$Name
     )
 
@@ -1111,7 +1111,7 @@ function Get-TrueNasSnapshot {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [Alias('Id')]
+        [Alias("Id")]
         [string]$Name,
         [Parameter(Mandatory = $false)]
         [string]$Dataset,
@@ -2768,7 +2768,8 @@ function Test-TrueNasActiveDirectory {
 }
 
 
-# Registers a custom argument completer for parameter "Name" without command line name but conditions in script block
+# Registers a custom argument completer for parameter "Name" without command line name but conditions in script block.
+# It does not modify the behavior of the -Name parameter of commands that are not mentioned.
 Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
 
@@ -2793,6 +2794,7 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
     }
 
 }
+
 
 Register-ArgumentCompleter -CommandName New-TrueNasSnapshotClone -ParameterName Destination -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
