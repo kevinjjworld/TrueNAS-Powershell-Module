@@ -857,7 +857,7 @@ function New-TrueNasDataset {
     return $result
 }
 
-function Private_PromoteTrueNasDataset {
+function Private_PromoteDataset {
     
     [CmdletBinding()]
     Param
@@ -909,7 +909,7 @@ function Set-TrueNasDataset {
             throw "The -promote parameter must be used with -Name parameter."
         }
 
-        return Private_PromoteTrueNasDataset -TrueNasSession $TrueNasSession -Name $Name
+        return Private_PromoteDataset -TrueNasSession $TrueNasSession -Name $Name
     }
 
     $Name = $Name -replace("/","%2F")
@@ -1135,6 +1135,85 @@ function Get-TrueNasDatasetProcess {
     $result = Invoke-RestMethodOnFreeNAS -Method Post -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
+}
+
+function Private_GetDatasetQuota {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [Alias("Name")]
+        [string]$Dataset,
+        [Parameter(Mandatory = $true)]
+        [string]$QuotaType
+    )
+
+    $Dataset = $Dataset -replace("/","%2F")
+    
+    $ApiSubPath = "/pool/dataset"
+    $ApiSubPath += "/id/" + $Dataset + "/get_quota"
+
+    $newObject = @{
+        quota_type = $QuotaType
+    }
+
+    #region Adding additional parameters
+        
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $Body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Get-TrueNasDatasetQuota {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [Alias("Name")]
+        [string]$Dataset
+    )
+    
+    return Private_GetDatasetQuota -TrueNasSession $TrueNasSession -Dataset $Dataset -QuotaType DATASET
+}
+
+function Get-TrueNasUserQuota {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [Alias("Name")]
+        [string]$Dataset
+    )
+    
+    return Private_GetDatasetQuota -TrueNasSession $TrueNasSession -Dataset $Dataset -QuotaType USER
+}
+
+function Get-TrueNasGroupQuota {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [Alias("Name")]
+        [string]$Dataset
+    )
+    
+    return Private_GetDatasetQuota -TrueNasSession $TrueNasSession -Dataset $Dataset -QuotaType GROUP
 }
 
 function Get-TrueNasSnapshot {
@@ -2870,7 +2949,7 @@ Register-ArgumentCompleter -ParameterName Dataset -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
 
     switch -Regex ($commandName) {
-        "^Get-TrueNasSnapshot|^New-TrueNasSnapshot"
+        "^Get-TrueNasSnapshot|^New-TrueNasSnapshot|^Get-TrueNas.*Quota"
         {
             (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name | Sort-Object
             break
