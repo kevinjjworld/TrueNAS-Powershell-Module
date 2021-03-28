@@ -1447,7 +1447,6 @@ function Get-TrueNasChildItem {
         [ValidateSet("name", "path", "realpath", "type", "size", "mode", "acl", "uid", "gid")]
         [string[]]$Select
     )
-
     
     $ApiSubPath = "/filesystem/listdir"
 
@@ -1490,6 +1489,67 @@ function Get-TrueNasChildItem {
     return $result
 }
 
+function Set-TrueNasPathOwner {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $false)]
+        [int]$UserID=-1,
+        [Parameter(Mandatory = $false)]
+        [int]$GroupID=-1,
+        [Parameter(Mandatory = $false)]
+        [switch]$Recurse,
+        [Parameter(Mandatory = $false)]
+        [switch]$Traverse
+    )
+
+    # UID or GID are not controlled at all in /filesystem/chown
+    # Add parameter to verify UID or GUID ?
+    # Do not confuse ID and UID and ID and GID. ID is Truenas user or group ID.
+
+    # TODO Add parameter to use TrueNAS ID of user and group ?
+
+    if([string]::IsNullOrEmpty($UserID) -and [string]::IsNullOrEmpty($GroupID)){
+        throw "You must specify a user or group name."
+    }
+
+    $ApiSubPath = "/filesystem/chown"
+
+    $newObject = @{
+        path = $Path;
+        "options" = @{};
+    }
+
+    #region Adding additional parameters
+        if($UserID -gt -1){
+            $newObject.Add( "uid", $UserID )
+        }
+
+        if($GroupID -gt -1){
+            $newObject.Add( "gid", $GroupID )
+        }
+        
+        if($Recurse.IsPresent){
+            $newObject.'options'.Add( "recursive", $true )
+        }
+
+        if($Traverse.IsPresent){
+            $newObject.'options'.Add( "traverse", $true )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Test-TrueNasPathTrivialACL {
     
     [CmdletBinding()]
@@ -1503,7 +1563,7 @@ function Test-TrueNasPathTrivialACL {
 
     $ApiSubPath = "/filesystem/acl_is_trivial"
     
-    $newObject =$Path
+    $newObject = $Path
 
     $body = $newObject | ConvertTo-Json
 
@@ -1556,9 +1616,6 @@ function Set-TrueNasPathPerm {
     # TODO UNIX Permissions
 }
 
-function Set-TrueNasPathOwner {
-    # TODO
-}
 
 function Get-TrueNasService {
     
@@ -2948,7 +3005,7 @@ Register-ArgumentCompleter -ParameterName Path -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
 
     switch -Regex ($commandName) {
-        "^Get-TrueNasChildItem|^Get-TrueNasPathAcl"
+        "^Get-TrueNasChildItem|^Get-TrueNasPath|^Set-TrueNasPath|^Test-TrueNasPath"
         {
             (Get-TrueNasChildItem -TrueNasSession $fakeBoundParameter.TrueNasSession -Path "$wordToComplete*").path | Sort-Object
             break
