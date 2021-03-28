@@ -1361,7 +1361,6 @@ function New-TrueNasSnapshotClone {
         [string]$Destination
     )
 
-    # $Destination = $Destination -replace("/","%2F") # Destination is not in the URI, so this line is useless
     $ApiSubPath = "/zfs/snapshot/clone"
     
     $newObject = @{
@@ -1403,7 +1402,6 @@ function Restore-TrueNasSnapshot {
         throw "-RemoveNewerSnapshots and -RemoveNewerSnapshotsAndClones cannot be used in the same command line."
     }
 
-    #$Name = $Name -replace("/","%2F") # Id is not in the URI, so this line is useless
     $ApiSubPath = "/zfs/snapshot/rollback"
     
     $newObject = @{
@@ -1488,6 +1486,29 @@ function Get-TrueNasChildItem {
     if($null -eq $result) {
         throw "Path $Path does not exist."
     }
+
+    return $result
+}
+
+function Test-TrueNasPathTrivialACL {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    $ApiSubPath = "/filesystem/acl_is_trivial"
+    
+    $newObject =$Path
+
+    $body = $newObject | ConvertTo-Json
+
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
 }
