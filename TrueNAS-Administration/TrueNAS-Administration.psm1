@@ -1441,18 +1441,24 @@ function Get-TrueNasFilesystemStat {
         [string]$Path
     )
 
-    $ApiSubPath = "/filesystem/stat"
-
     if ([string]::IsNullOrEmpty($Path)) {
         $Path = "/"
     }
 
+    $ApiSubPathStat = "/filesystem/stat"
+    $ApiSubPathStatFS = "/filesystem/statfs"
+
     $newObject = $Path
-
     $body = $newObject | ConvertTo-Json
-    
-    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath -ErrorAction Stop
 
+    $result = @{
+        Stat = New-Object -TypeName pscustomobject;
+        StatFS = New-Object -TypeName pscustomobject
+    }
+
+    $result.Stat = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPathStat -ErrorAction Stop
+    $result.StatFS = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPathStatFS -ErrorAction Stop
+    
     return $result
 }
 
