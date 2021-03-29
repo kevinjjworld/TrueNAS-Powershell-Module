@@ -1431,6 +1431,31 @@ function Restore-TrueNasSnapshot {
 
 New-Alias -Name Invoke-TrueNasSnapshotRollback -Value Restore-TrueNasSnapshot -Force
 
+function Get-TrueNasFilesystemStat {
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [string]$Path
+    )
+
+    $ApiSubPath = "/filesystem/stat"
+
+    if ([string]::IsNullOrEmpty($Path)) {
+        $Path = "/"
+    }
+
+    $newObject = $Path
+
+    $body = $newObject | ConvertTo-Json
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath -ErrorAction Stop
+
+    return $result
+}
+
 function Get-TrueNasChildItem {
     
     [CmdletBinding()]
@@ -3005,7 +3030,7 @@ Register-ArgumentCompleter -ParameterName Path -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
 
     switch -Regex ($commandName) {
-        "^Get-TrueNasChildItem|^Get-TrueNasPath|^Set-TrueNasPath|^Test-TrueNasPath"
+        "^Get-TrueNasChildItem|^Get-TrueNasPath|^Set-TrueNasPath|^Test-TrueNasPath|^Get-TrueNasFile"
         {
             (Get-TrueNasChildItem -TrueNasSession $fakeBoundParameter.TrueNasSession -Path "$wordToComplete*").path | Sort-Object
             break
