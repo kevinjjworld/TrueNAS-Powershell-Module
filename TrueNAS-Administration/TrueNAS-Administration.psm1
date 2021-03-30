@@ -2694,9 +2694,7 @@ function Get-TrueNasVMMemoryUsage {
     Param
     (
         [Parameter(Mandatory = $true)]
-        [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $false)]
-        [int]$Id
+        [TrueNasSession]$TrueNasSession
     )
     
     
@@ -2716,16 +2714,25 @@ function Get-TrueNasVMDevices {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id=-1
+        [int]$Id=-1,
+        [Parameter(Mandatory = $false)]
+        [string]$Name
     )
     
+    if ($Id -gt -1 -and ![string]::IsNullOrEmpty($Name)) {
+        throw "-Id and -Name cannot be used in the same command line."
+    }
     
+    # Get VM Id
+    if(![string]::IsNullOrEmpty($Name)) {
+        $Id = (Get-TrueNasVM -TrueNasSession $TrueNasSession -Name $Name).id
+    }
+
     $ApiSubPath = "/vm/device"
 
     if ($Id -gt -1) {
         $ApiSubPath += "/id/" + $Id
     }
-    
     
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
@@ -3298,6 +3305,16 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
         "-TrueNasVM"
         {
             (Get-TrueNasVM -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase).name | Sort-Object
+            break
+        }
+        "-TrueNasUser"
+        {
+            (Get-TrueNasUser -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -IncludeDSCache:$fakeBoundParameter.IncludeDSCache).username | Sort-Object
+            break
+        }
+        "-TrueNasGroup"
+        {
+            (Get-TrueNasGroup -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -IncludeDSCache:$fakeBoundParameter.IncludeDSCache).group | Sort-Object
             break
         }
         Default {}
