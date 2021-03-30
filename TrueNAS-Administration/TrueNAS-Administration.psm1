@@ -1604,6 +1604,61 @@ function Test-TrueNasPathTrivialACL {
     return $result
 }
 
+function Private_GetTrueNasDefaultAclNames {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession
+    )
+
+    
+    $ApiSubPath = "/filesystem/default_acl_choices"
+
+    $result = Invoke-RestMethodOnFreeNAS -Method GET -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
+function Get-TrueNasDefaultAcl {
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [string]$ShareType
+    )
+
+    
+    $ApiSubPath = "/filesystem/get_default_acl"
+
+    
+    $newObject = @{
+
+    }
+
+    #region Adding additional parameters
+        if(![string]::IsNullOrEmpty($Name)){
+            $newObject.Add( "acl_type", $Name )
+        }
+
+        if(![string]::IsNullOrEmpty($ShareType)){
+            $newObject.Add( "share_type", $ShareType )
+        }
+    #endregion
+
+    $body = $newObject | ConvertTo-Json
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
+}
+
 function Get-TrueNasPathAcl {
     
     [CmdletBinding()]
@@ -1640,11 +1695,155 @@ function Get-TrueNasPathAcl {
 }
 
 function Set-TrueNasPathAcl {
-    # TODO
+    
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [array]$dacl,
+        [Parameter(Mandatory = $false)]
+        [int]$uid=-1,
+        [Parameter(Mandatory = $false)]
+        [int]$gid=-1,
+        [Parameter(Mandatory = $false)]
+        [switch]$Recursive,
+        [Parameter(Mandatory = $false)]
+        [switch]$Traverse,
+        [Parameter(Mandatory = $false)]
+        [switch]$StripAcl,
+        [Parameter(Mandatory = $false)]
+        [switch]$Canonicalize,
+        [Parameter(Mandatory = $false)]
+        [switch]$AutoInherit,
+        [Parameter(Mandatory = $false)]
+        [switch]$Protected,
+        [Parameter(Mandatory = $false)]
+        [string]$AclType
+    )
+
+    $ApiSubPath = "/filesystem/setacl"
+
+    
+    $newObject = @{
+        path = $Path
+        dacl = $dacl
+        nfs41_flags = @{}
+        options = @{}
+    }
+
+    #region Adding additional parameters
+        if($uid -gt -1){
+            $newObject.Add( "uid", $uid )
+        }
+
+        if($gid -gt -1){
+            $newObject.Add( "gid", $gid )
+        }
+
+        #if($dacl.count -gt 0){
+        #    $newObject.Add( "dacl", $dacl )
+        #}
+
+        if($Recursive.IsPresent){
+            $newObject.options.Add( "recursive", $true )
+        }
+
+        if($Traverse.IsPresent){
+            $newObject.options.Add( "traverse", $true )
+        }
+
+        if($StripAcl.IsPresent){
+            $newObject.options.Add( "stripacl", $true )
+        }
+
+        if($Canonicalize.IsPresent){
+            $newObject.options.Add( "canonicalize", $true )
+        }
+
+        if($AutoInherit.IsPresent){
+            $newObject.nfs41_flags.Add( "autoinherit", $true )
+        }
+
+        if($Protected.IsPresent){
+            $newObject.nfs41_flags.Add( "protected", $true )
+        }
+
+        if(![string]::IsNullOrEmpty($AclType)){
+            $newObject.Add( "acltype", $AclType )
+        }
+    #endregion
+
+
+    $body = $newObject | ConvertTo-Json -Depth 3
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
 }
 
 function Set-TrueNasPathPerm {
-    # TODO UNIX Permissions
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [array]$Mode,
+        [Parameter(Mandatory = $false)]
+        [int]$uid,
+        [Parameter(Mandatory = $false)]
+        [int]$gid,
+        [Parameter(Mandatory = $false)]
+        [switch]$Recursive,
+        [Parameter(Mandatory = $false)]
+        [switch]$Traverse,
+        [Parameter(Mandatory = $false)]
+        [switch]$StripAcl
+    )
+
+    $ApiSubPath = "/filesystem/setperm"
+
+    
+    $newObject = @{
+        path = $Path
+        mode = $mode
+        options = @{}
+    }
+
+    #region Adding additional parameters
+        if([string]::IsNullOrEmpty($uid)){
+            $newObject.Add( "uid", $uid )
+        }
+
+        if([string]::IsNullOrEmpty($gid)){
+            $newObject.Add( "gid", $gid )
+        }
+
+        if($Recursive.IsPresent){
+            $newObject.options.Add( "recursive", $true )
+        }
+
+        if($Traverse.IsPresent){
+            $newObject.options.Add( "traverse", $true )
+        }
+
+        if($StripAcl.IsPresent){
+            $newObject.options.Add( "stripacl", $true )
+        }
+    #endregion
+
+
+    $body = $newObject | ConvertTo-Json -Depth 3
+    
+    $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    return $result
 }
 
 
@@ -1656,9 +1855,14 @@ function Get-TrueNasService {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $false)]
-        [int]$Id=-1
+        [int]$Id=-1,
+        [Parameter(Mandatory = $false)]
+        [string]$Name
     )
 
+    if(($Id -gt -1) -and ![string]::IsNullOrEmpty($Name)){
+        throw "-Id and -Name cannot be used in the same command line."
+    }
     
     $ApiSubPath = "/service"
 
@@ -1666,8 +1870,15 @@ function Get-TrueNasService {
         $ApiSubPath += "/id/" + $Id
     }
 
-    
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
+
+    if (![string]::IsNullOrEmpty($Name)) {
+        $result = $result | Where-Object { $_.service -like $Name }
+    }
+
+    if($null -ne $result) {
+        throw "Service $Name was not found."
+    }
 
     return $result
 }
@@ -3026,7 +3237,11 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
             (Get-TrueNasDataset -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase -Recurse:$fakeBoundParameter.Recurse -WarningAction SilentlyContinue).name | Sort-Object
             break
         }
-        
+        "^Get-TrueNasDefaultAcl"
+        {
+            Private_GetTrueNasDefaultAclNames -TrueNasSession $fakeBoundParameter.TrueNasSession | Sort-Object
+            break
+        }
         Default {}
     }
 
