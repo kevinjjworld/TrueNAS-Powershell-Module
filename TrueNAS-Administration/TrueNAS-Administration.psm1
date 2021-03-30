@@ -1920,7 +1920,7 @@ function Enable-TrueNasService {
     if(($Id -eq -1) -and [string]::IsNullOrEmpty($Name)){
         throw "You must specify a service id or name."
     }
-    
+
     if($Id -gt -1) {
         return Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -EnableAtStartup
     }
@@ -3304,7 +3304,7 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
             Private_GetTrueNasDefaultAclNames -TrueNasSession $fakeBoundParameter.TrueNasSession | Sort-Object
             break
         }
-        "^Get-TrueNasService"
+        "-TrueNasService"
         {
             (Get-TrueNasService -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase).service | Sort-Object
             break
