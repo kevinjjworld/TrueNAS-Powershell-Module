@@ -1794,11 +1794,11 @@ function Set-TrueNasPathPerm {
         [Parameter(Mandatory = $true)]
         [string]$Path,
         [Parameter(Mandatory = $true)]
-        [array]$Mode,
+        [string]$Mode,
         [Parameter(Mandatory = $false)]
-        [int]$uid,
+        [int]$uid=-1,
         [Parameter(Mandatory = $false)]
-        [int]$gid,
+        [int]$gid=-1,
         [Parameter(Mandatory = $false)]
         [switch]$Recursive,
         [Parameter(Mandatory = $false)]
@@ -1812,16 +1812,16 @@ function Set-TrueNasPathPerm {
     
     $newObject = @{
         path = $Path
-        mode = $mode
+        mode = $Mode
         options = @{}
     }
 
     #region Adding additional parameters
-        if([string]::IsNullOrEmpty($uid)){
+        if($uid -gt -1){
             $newObject.Add( "uid", $uid )
         }
 
-        if([string]::IsNullOrEmpty($gid)){
+        if($gid -gt -1){
             $newObject.Add( "gid", $gid )
         }
 
@@ -1857,7 +1857,9 @@ function Get-TrueNasService {
         [Parameter(Mandatory = $false)]
         [int]$Id=-1,
         [Parameter(Mandatory = $false)]
-        [string]$Name
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [switch]$IgnoreCase
     )
 
     if(($Id -gt -1) -and ![string]::IsNullOrEmpty($Name)){
@@ -1873,10 +1875,26 @@ function Get-TrueNasService {
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     if (![string]::IsNullOrEmpty($Name)) {
-        $result = $result | Where-Object { $_.service -like $Name }
+        if($Name -match "\*") {
+            if ($IgnoreCase.IsPresent) {
+                $result = $result | Where-Object { $_.service -like $Name }    
+            }
+            else {
+                $result = $result | Where-Object { $_.service -clike $Name }
+            }
+        }
+        else {
+            if ($IgnoreCase.IsPresent) {
+                $result = $result | Where-Object { $_.service -eq $Name }    
+            }
+            else {
+                $result = $result | Where-Object { $_.service -ceq $Name }
+            }
+        }
+        
     }
 
-    if($null -ne $result) {
+    if($null -eq $result) {
         throw "Service $Name was not found."
     }
 
@@ -3240,6 +3258,11 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
         "^Get-TrueNasDefaultAcl"
         {
             Private_GetTrueNasDefaultAclNames -TrueNasSession $fakeBoundParameter.TrueNasSession | Sort-Object
+            break
+        }
+        "^Get-TrueNasService"
+        {
+            (Get-TrueNasService -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase).service | Sort-Object
             break
         }
         Default {}
