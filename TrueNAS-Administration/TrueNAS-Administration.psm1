@@ -1875,23 +1875,12 @@ function Get-TrueNasService {
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     if (![string]::IsNullOrEmpty($Name)) {
-        if($Name -match "\*") {
-            if ($IgnoreCase.IsPresent) {
-                $result = $result | Where-Object { $_.service -like $Name }    
-            }
-            else {
-                $result = $result | Where-Object { $_.service -clike $Name }
-            }
+        iif ($IgnoreCase.IsPresent) {
+            $result = $result | Where-Object { $_.service -like $Name }    
         }
         else {
-            if ($IgnoreCase.IsPresent) {
-                $result = $result | Where-Object { $_.service -eq $Name }    
-            }
-            else {
-                $result = $result | Where-Object { $_.service -ceq $Name }
-            }
+            $result = $result | Where-Object { $_.service -clike $Name }
         }
-        
     }
 
     if($null -eq $result) {
@@ -2025,7 +2014,7 @@ function Start-TrueNasService {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [string]$ServiceName,
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$HaPropagate
     )
@@ -2035,7 +2024,7 @@ function Start-TrueNasService {
 
      
      $newObject = @{
-        service = $ServiceName
+        service = $Name
     }
 
     #region Adding additional parameters
@@ -2064,7 +2053,7 @@ function Stop-TrueNasService {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [string]$ServiceName,
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$HaPropagate
     )
@@ -2074,7 +2063,7 @@ function Stop-TrueNasService {
 
      
      $newObject = @{
-        service = $ServiceName
+        service = $Name
     }
 
     #region Adding additional parameters
@@ -2103,7 +2092,7 @@ function Restart-TrueNasService {
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
         [Parameter(Mandatory = $true)]
-        [string]$ServiceName,
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$HaPropagate
     )
@@ -2113,7 +2102,7 @@ function Restart-TrueNasService {
 
      
      $newObject = @{
-        service = $ServiceName
+        service = $Name
     }
 
     #region Adding additional parameters
@@ -2126,8 +2115,6 @@ function Restart-TrueNasService {
     #endregion
 
     $body = $newObject | ConvertTo-Json
-    
-
     
     $result = Invoke-RestMethodOnFreeNAS -Method Post -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
@@ -2173,7 +2160,6 @@ function Get-TrueNasSMBConfig {
 
     
     $ApiSubPath = "/smb"
-
     
     $result = Invoke-RestMethodOnFreeNAS -Method Get -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
     
@@ -3307,6 +3293,11 @@ Register-ArgumentCompleter -ParameterName Name -ScriptBlock {
         "-TrueNasService"
         {
             (Get-TrueNasService -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase).service | Sort-Object
+            break
+        }
+        "-TrueNasVM"
+        {
+            (Get-TrueNasVM -TrueNasSession $fakeBoundParameter.TrueNasSession -Name "$wordToComplete*" -IgnoreCase).name | Sort-Object
             break
         }
         Default {}
