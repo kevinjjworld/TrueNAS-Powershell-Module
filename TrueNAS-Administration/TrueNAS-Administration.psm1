@@ -1901,6 +1901,64 @@ function Get-TrueNasService {
     return $result
 }
 
+function Enable-TrueNasService {
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [int]$Id=-1,
+        [Parameter(Mandatory = $false)]
+        [string]$Name
+    )
+
+    if(($Id -gt -1) -and ![string]::IsNullOrEmpty($Name)){
+        throw "-Id and -Name cannot be used in the same command line."
+    }
+
+    if(($Id -eq -1) -and [string]::IsNullOrEmpty($Name)){
+        throw "You must specify a service id or name."
+    }
+    
+    if($Id -gt -1) {
+        return Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -EnableAtStartup
+    }
+
+    if(![string]::IsNullOrEmpty($Name)) {
+        return Set-TrueNasService -TrueNasSession $TrueNasSession -Name $Name -EnableAtStartup
+    }
+}
+
+function Disable-TrueNasService {
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory = $true)]
+        [TrueNasSession]$TrueNasSession,
+        [Parameter(Mandatory = $false)]
+        [int]$Id=-1,
+        [Parameter(Mandatory = $false)]
+        [string]$Name
+    )
+
+    if(($Id -gt -1) -and ![string]::IsNullOrEmpty($Name)){
+        throw "-Id and -Name cannot be used in the same command line."
+    }
+
+    if(($Id -eq -1) -and [string]::IsNullOrEmpty($Name)){
+        throw "You must specify a service id or name."
+    }
+
+    if($Id -gt -1) {
+        return Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -DisableAtStartup
+    }
+
+    if(![string]::IsNullOrEmpty($Name)) {
+        return Set-TrueNasService -TrueNasSession $TrueNasSession -Name $Name -DisableAtStartup
+    }
+}
+
 function Set-TrueNasService {
     
     [CmdletBinding()]
@@ -1908,8 +1966,10 @@ function Set-TrueNasService {
     (
         [Parameter(Mandatory = $true)]
         [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [int]$Id,
+        [Parameter(Mandatory = $false)]
+        [int]$Id=-1,
+        [Parameter(Mandatory = $false)]
+        [string]$Name,
         [Parameter(Mandatory = $false)]
         [switch]$EnableAtStartup,
         [Parameter(Mandatory = $false)]
@@ -1919,8 +1979,22 @@ function Set-TrueNasService {
     if($EnableAtStartup.IsPresent -and $DisableAtStartup.IsPresent){
         throw "-EnableAtStartup and -DisableAtStartup cannot be used in the same command line."
     }
-
     
+    if(($Id -gt -1) -and ![string]::IsNullOrEmpty($Name)){
+        throw "-Id and -Name cannot be used in the same command line."
+    }
+
+    if(($Id -eq -1) -and [string]::IsNullOrEmpty($Name)){
+        throw "You must specify a service id or name."
+    }
+
+    if(![string]::IsNullOrEmpty($Name)) {
+        $Id = (Get-TrueNasService -TrueNasSession $TrueNasSession -Name $Name -ErrorAction Stop).id
+        if($Id -eq -1) {
+            throw "Service $Name was not found."
+        }
+    }
+
     $ApiSubPath += "/service/id/$Id"
 
      
@@ -1937,40 +2011,10 @@ function Set-TrueNasService {
     #endregion
 
     $body = $newObject | ConvertTo-Json
-    
-
-    
+        
     $result = Invoke-RestMethodOnFreeNAS -Method Put -Body $body -TrueNasSession $TrueNasSession -ApiSubPath $ApiSubPath
 
     return $result
-}
-
-function Enable-TrueNasService {
-    
-    [CmdletBinding()]
-    Param
-    (
-        [Parameter(Mandatory = $true)]
-        [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [int]$Id
-    )
-
-    return (Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -EnableAtStartup)
-}
-
-function Disable-TrueNasService {
-    
-    [CmdletBinding()]
-    Param
-    (
-        [Parameter(Mandatory = $true)]
-        [TrueNasSession]$TrueNasSession,
-        [Parameter(Mandatory = $true)]
-        [int]$Id
-    )
-
-    return (Set-TrueNasService -TrueNasSession $TrueNasSession -Id $Id -DisableAtStartup)
 }
 
 function Start-TrueNasService {
