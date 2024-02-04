@@ -115,6 +115,8 @@ function Invoke-RestMethodOnFreeNAS {
         WebSession = $TrueNasSession.WebSession
     }
 
+    $params.Add("ContentType", "Application/Json")
+
     if([string]::IsNullOrEmpty($params.Body)) {
         $params.Remove("Body")
     }
